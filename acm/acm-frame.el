@@ -84,7 +84,7 @@
              'resize-mode)))
          frame)
     (setq frame (make-frame
-                 `((name . ,frame-name)
+                 `(,(if (display-graphic-p) (cons 'name frame-name))
                    (parent-frame . ,parent)
                    (no-accept-focus . ,no-accept-focus)
                    (no-focus-on-map . ,no-accept-focus)
@@ -143,11 +143,13 @@
 ;; make sure font size restore to normal size when system return from suspend.
 (defun acm-frame-restore-font ()
   (ignore-errors
-    (with-selected-frame acm-menu-frame
-      (set-frame-font acm-frame-font))
+    (when (or (display-graphic-p) (frame-visible-p acm-menu-frame))
+      (with-selected-frame acm-menu-frame
+        (set-frame-font acm-frame-font)))
 
-    (with-selected-frame acm-doc-frame
-      (set-frame-font acm-frame-font))))
+    (when (or (display-graphic-p) (frame-visible-p acm-doc-frame))
+      (with-selected-frame acm-doc-frame
+        (set-frame-font acm-frame-font)))))
 
 (if (daemonp)
     (add-hook 'server-after-make-frame-hook
