@@ -281,6 +281,7 @@ class LspServer:
         self.code_format_provider = False
         self.range_format_provider = False
         self.signature_help_provider = False
+        self.highlight_provider = False
         self.workspace_symbol_provider = False
         self.inlay_hint_provider = False
         self.semantic_tokens_provider = False
@@ -404,6 +405,10 @@ class LspServer:
                                 1
                             ]
                         },
+                        "documentationFormat": [
+                            "markdown",
+                            "plaintext"
+                        ],
                         "resolveSupport": {
                             # rust-analyzer need add `additionalTextEdits` to enable auto-import.
                             "properties": ["documentation", "detail", "additionalTextEdits"]
@@ -446,6 +451,12 @@ class LspServer:
                 "onTypeFormatting": {
                     "dynamicRegistration": True
                 },
+                "synchronization": {
+                    "dynamicRegistration": True,
+                    "willSave": True,
+                    "didSave": True,
+                    "willSaveWaitUntil": True,
+                }
             },
             "window": {
                 "workDoneProgress": True
@@ -616,7 +627,7 @@ class LspServer:
 
     def record_request_id(self, request_id: int, handler: Handler):
         self.request_dict[request_id] = handler
-
+        
     def send_shutdown_request(self):
         self.sender.send_request("shutdown", {}, generate_request_id())
 
@@ -693,6 +704,7 @@ class LspServer:
             "Unhandled method textDocument/formatting": "code_format_provider",
             "Unhandled method textDocument/rangeFormatting": "range_format_provider",
             "Unhandled method textDocument/signatureHelp": "signature_help_provider",
+            "Unhandled method textDocument/documentHighlight": "highlight_provider",
             "Unhandled method workspace/symbol": "workspace_symbol_provider",
             "Unhandled method textDocument/inlayHint": "inlay_hint_provider",
         }
@@ -765,6 +777,7 @@ class LspServer:
             ("code_format_provider", ["result", "capabilities", "documentFormattingProvider"]),
             ("range_format_provider", ["result", "capabilities", "documentRangeFormattingProvider"]),
             ("signature_help_provider", ["result", "capabilities", "signatureHelpProvider"]),
+            ("highlight_provider", ["result", "capabilities", "documentHighlightProvider"]),
             ("workspace_symbol_provider", ["result", "capabilities", "workspaceSymbolProvider"]),
             ("inlay_hint_provider", [
                 ["result", "capabilities", "inlayHintProvider"],

@@ -9,9 +9,10 @@ class CodeAction(Handler):
     provider = "code_action_provider"
     provider_message = "Current server not support code action."
 
-    def process_request(self, lsp_server_name, diagnostics, range_start, range_end, action_kind) -> dict:
+    def process_request(self, lsp_server_name, diagnostics, range_start, range_end, action_kind, command) -> dict:
         self.action_kind = action_kind
         self.lsp_server_name = lsp_server_name
+        self.command = command
 
         range = {
             "start": range_start,
@@ -35,4 +36,5 @@ class CodeAction(Handler):
         if remote_connection_info != "":
             for item in response:
                 convert_workspace_edit_path_to_tramped_path(item["edit"], remote_connection_info)
-        self.file_action.push_code_actions(response, self.lsp_server_name, self.action_kind)
+
+        self.file_action.push_code_actions(response, self.lsp_server_name, self.action_kind, self.command)

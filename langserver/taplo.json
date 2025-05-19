@@ -1,0 +1,37 @@
+{
+  "name": "taplo",
+  "languageId": "toml",
+  "command": [
+    "taplo",
+    "lsp",
+    "stdio"
+  ],
+  "settings": {},
+  "initializationOptions": {
+    "evenBetterToml": {
+      "configFile": {
+        "path": null,
+        "enabled": true
+      },
+      "semanticTokens": true,
+      "schema": {
+        "enabled": true,
+        "links": false,
+        "catalogs": [
+          "https://www.schemastore.org/api/json/catalog.json"
+        ],
+        "associations": null,
+        "cache": {
+          "memoryExpiration": 60,
+          "diskExpiration": 600
+        }
+      },
+      "completion": {
+        "maxKeys": 5
+      },
+      "syntax": {
+        "semanticTokens": true
+      }
+    }
+  }
+}

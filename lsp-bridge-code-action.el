@@ -121,8 +121,11 @@ Set it `nil' to improve performance."
                (cons (overlay-start overlay) (overlay-end overlay))
              (cons (point) (point)))))))
 
-(defun lsp-bridge-code-action (&optional action-kind)
+(defun lsp-bridge-code-action (&optional action-kind command)
   "Send code action to LSP server to fixes code or problems.
+
+`command' is used to filter returned actions.
+`command' can be a regex.
 
 Default request all kind code-action.
 
@@ -145,7 +148,8 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
       (lsp-bridge-call-file-api "try_code_action"
                                 (lsp-bridge--point-position (car range))
                                 (lsp-bridge--point-position (cdr range))
-                                action-kind)
+                                action-kind
+                                command)
       )))
 
 (defun lsp-bridge-code-action-popup-select ()
@@ -409,6 +413,52 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
               (format "[LSP-BRIDGE] Pick an action (default: %s): " default-action)
               menu-items nil t nil nil default-action)))
         (lsp-bridge-code-action--fix-do (cdr (assoc select-name menu-items))))))))
+
+(defun lsp-bridge-code-action--fix-quick (actions action-kind command)
+  (let* ((menu-items
+          (or
+           (cl-remove-if #'null
+                         (mapcar #'(lambda (action)
+                                     (lsp-bridge-code-action--filter action action-kind))
+                                 actions))
+           (apply #'error
+                  (if action-kind
+                      (format "No '%s' code action here" action-kind)
+                    "No code actions here"))))
+         (filtered-menu-items (if command
+                                  (seq-filter #'(lambda (menu-item)
+                                                  (string-match-p command (car menu-item)))
+                                              menu-items)
+                                menu-items))
+         (action (if (and (or action-kind command)
+                          (null (cadr filtered-menu-items)))
+                     (cdr (car filtered-menu-items)) nil))
+         (filtered-num (length filtered-menu-items))
+         (preferred-action (cl-find-if
+                            (lambda (menu-item)
+                              (plist-get (cdr menu-item) :isPreferred))
+                            filtered-menu-items))
+         (default-action (car (or preferred-action (car filtered-menu-items))))
+         )
+    ;; (message "m %S" filtered-menu-items)
+    ;; (message "%S" action)
+    (cond
+     ;; Fix action if only one match.
+     (action
+      (lsp-bridge-code-action--fix-do action))
+     (filtered-menu-items
+      ;; Popup menu if `lsp-bridge-code-action-enable-popup-menu' option is non-nil.
+      (if (and lsp-bridge-code-action-enable-popup-menu
+                (acm-frame-can-display-p))
+           (lsp-bridge-code-action-popup-menu filtered-menu-items default-action)
+          (let ((select-name
+                 (completing-read
+                  (format "[LSP-BRIDGE] Pick an action (default: %s): " default-action)
+                  filtered-menu-items nil t nil nil default-action)))
+            (lsp-bridge-code-action--fix-do (cdr (assoc select-name filtered-menu-items))))))
+     (t
+      (message "code action \"%s\" not found in the current context" command)
+      ))))
 
 (provide 'lsp-bridge-code-action)
 

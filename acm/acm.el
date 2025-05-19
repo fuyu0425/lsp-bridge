@@ -311,6 +311,7 @@
   (let* ((completion-menu-is-show-p (acm-frame-visible-p acm-menu-frame))
          (candidate-info (acm-menu-current-candidate))
          (backend (plist-get candidate-info :backend)))
+    (setq-local lsp-bridge-manual-complete-flag nil)
     ;; Turn off `acm-mode'.
     (acm-mode -1)
 
@@ -645,6 +646,10 @@ The key of candidate will change between two LSP results."
   ;; Init quick mode map.
   (acm-quick-access-init)
 
+  ;; (when (boundp 'acm-backend-lsp-items)
+  ;;  (message "acm-update acm-backend-lsp-items %S" (hash-table-count acm-backend-lsp-items)))
+
+
   ;; Adjust `gc-cons-threshold' to maximize temporary,
   ;; make sure Emacs not do GC
   (let* ((gc-cons-threshold most-positive-fixnum)
@@ -701,6 +706,8 @@ The key of candidate will change between two LSP results."
 
         ;; Set candidates and menu candidates.
         (setq-local acm-candidates candidates)
+        ;; (message "acm-can %S" (car acm-candidates))
+
         (setq-local acm-menu-candidates menu-candidates)
 
         ;; Init colors.
@@ -708,7 +715,7 @@ The key of candidate will change between two LSP results."
 
         ;; Record menu popup position and buffer.
         (setq acm-menu-frame-popup-point (or (car bounds) (point)))
-
+        ;; (message "acm-update before render")
         ;; `posn-at-point' will failed in CI, add checker make sure CI can pass.
         ;; CI don't need popup completion menu.
         (when (posn-at-point acm-menu-frame-popup-point)
@@ -722,6 +729,7 @@ The key of candidate will change between two LSP results."
             (acm-frame-delete-frame acm-doc-frame))
 
           ;; Create menu frame if it not exists.
+          ;; (message "acm-update before create frame")
           (acm-frame-create-frame-if-not-exist acm-menu-frame acm-buffer "acm frame" 0 t)
 
           ;; Render menu.
@@ -773,10 +781,13 @@ The key of candidate will change between two LSP results."
 
   (acm-cancel-timer acm-markdown-render-timer)
 
-  (setq acm-markdown-render-doc nil))
+  (setq acm-markdown-render-doc nil)
+  (setq acm-markdown-render-doc-mode nil)
+  )
 
 (defun acm--pre-command ()
   ;; Use `pre-command-hook' to hide completion menu when command match `acm-continue-commands'.
+  ;; (message "acm pre: %S" this-command)
   (unless (acm-match-symbol-p acm-continue-commands this-command)
     (acm-hide)))
 
@@ -962,6 +973,14 @@ The key of candidate will change between two LSP results."
                         (+ cursor-y offset-y)))))
     (acm-frame-set-frame-position acm-menu-frame acm-frame-x acm-frame-y)))
 
+(defun acm-doc-python--filter-nbsp (str)
+  "Filter nbsp entities from STR."
+  (let ((rx "&nbsp;"))
+    (when (eq system-type 'windows-nt)
+      (setq rx (concat rx "\\|\r")))
+    (when str
+      (replace-regexp-in-string rx " " str))))
+
 (defun acm-doc-try-show (&optional update-completion-item)
   ;; We need call `acm-backend-*-candidate-doc' function even option `acm-enable-doc' is nil,
   ;; because `completion_item_resolve' will fetch `additionalTextEdits', otherwise, auto import feature is miss.
@@ -981,6 +1000,10 @@ The key of candidate will change between two LSP results."
             (acm-frame-create-frame-if-not-exist acm-doc-frame acm-doc-buffer "acm doc frame" 1 t)
             (setq acm-doc-frame-hide-p nil)
 
+            (setq acm-markdown-render-doc-mode major-mode)
+            ;; python &nbsp handling
+            (when (eq acm-markdown-render-doc-mode 'python-mode)
+                (setq doc (acm-doc-python--filter-nbsp doc)))
             ;; Insert documentation and turn on wrap line.
             (with-current-buffer (get-buffer-create acm-doc-buffer)
               (read-only-mode -1)
@@ -1209,6 +1232,7 @@ The key of candidate will change between two LSP results."
 
 (defvar acm-markdown-render-timer nil)
 (defvar acm-markdown-render-doc nil)
+(defvar acm-markdown-render-doc-mode nil)
 
 (defvar acm-markdown-render-prettify-symbols-alist
   (nconc
@@ -1225,6 +1249,7 @@ The key of candidate will change between two LSP results."
     ("light" acm-frame-background-light-color)))
 
 (defun acm-markdown-render-content (&optional enable-decorations)
+  ;; (message "acm-markdown-render-content called")
   (when (fboundp 'gfm-view-mode)
     (let ((inhibit-message t))
       ;; Enable `gfm-view-mode' first, otherwise `gfm-view-mode' will change attribute of face `markdown-code-face'.
@@ -1242,7 +1267,8 @@ The key of candidate will change between two LSP results."
   (prettify-symbols-mode 1)
 
   ;; Syntax Highlight.
-  (font-lock-ensure)
+  (let ((markdown-fontify-code-block-default-mode acm-markdown-render-doc-mode))
+    (font-lock-ensure))
 
   (unless enable-decorations
     ;; Disable line number.
@@ -1355,6 +1381,7 @@ The key of candidate will change between two LSP results."
                            'acm-filter-face))
 
   ;; Filter candiates.
+  ;; (message "acm-filter-update call acm-update")
   (acm-update))
 
 ;; Emacs 28: Do not show Acm commands with M-X

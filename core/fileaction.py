@@ -374,7 +374,7 @@ class FileAction:
     def record_dart_closing_lables(self, labels):
         eval_in_emacs("lsp-bridge-dart-closing-labels--render", self.filepath, get_lsp_file_host(), labels)
 
-    def push_code_actions(self, actions, server_name, action_kind):
+    def push_code_actions(self, actions, server_name, action_kind, command):
         log_time("Record actions from '{}' for file {}".format(server_name, os.path.basename(self.filepath)))
         self.code_actions[server_name] = actions
 
@@ -387,7 +387,7 @@ class FileAction:
 
             code_actions = self.get_code_actions()
             if len(code_actions) > 0:
-                eval_in_emacs("lsp-bridge-code-action--fix", code_actions, action_kind)
+                eval_in_emacs("lsp-bridge-code-action--fix-quick", code_actions, action_kind, command)
             elif self.get_diagnostics_count() > 0:
                 message_emacs("Please move cursor to error or warning, then execute 'lsp-bridge-code-action' again.")
             else:
@@ -403,7 +403,7 @@ class FileAction:
 
         return code_actions
 
-    def send_code_action_request(self, lsp_server, range_start, range_end, action_kind):
+    def send_code_action_request(self, lsp_server, range_start, range_end, action_kind, command):
         lsp_server_name = lsp_server.server_info["name"]
 
         diagnostics = []
@@ -418,8 +418,7 @@ class FileAction:
 
         self.send_request(
             lsp_server, "code_action", CodeAction,
-            lsp_server_name, diagnostics, range_start, range_end, action_kind
-        )
+            lsp_server_name, diagnostics, range_start, range_end, action_kind, command)
 
     def save_file(self, buffer_name):
         for lsp_server in self.get_lsp_servers():

@@ -178,7 +178,8 @@
                    (lambda (symbol)
                      (or (fboundp symbol)
                          (boundp symbol)
-                         (featurep symbol)
+                         ;; featurep is not that important; comment out now
+                         ;; (featurep symbol) ;; slow in emacs-mac/emacs-plus I don't know why
                          (facep symbol)))))
 
 (defun acm-backend-elisp-local-symbols ()

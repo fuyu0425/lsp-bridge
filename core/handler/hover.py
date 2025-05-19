@@ -62,8 +62,10 @@ class Hover(Handler):
         contents = response["contents"]
         render_string = self.parse_hover_contents(contents, [])
 
-        if self.show_style == "popup":
-            callback = "lsp-bridge-popup-documentation--callback"
-        else:
-            callback = "lsp-bridge-show-documentation--callback"
+        callback = "lsp-bridge-{}-documentation--callback".format(self.show_style)
+        # print(callback)
+        # if self.show_style == "popup":
+        #     callback = "lsp-bridge-popup-documentation--callback"
+        # else:
+        #     callback = "lsp-bridge-show-documentation--callback"
         eval_in_emacs(callback, render_string)

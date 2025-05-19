@@ -103,6 +103,14 @@
   (interactive)
   (lsp-bridge-call-file-api "rust_reload_workspace"))
 
+(defun lsp-bridge-rust-open-external-doc-web ()
+  (interactive)
+  (lsp-bridge-call-file-api "rust_open_external_doc" "web"))
+
+(defun lsp-bridge-rust-open-external-doc-local ()
+  (interactive)
+  (lsp-bridge-call-file-api "rust_open_external_doc" "local"))
+
 (provide 'lsp-bridge-rust)
 
 ;;; lsp-bridge-rust.el ends here

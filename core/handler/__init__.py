@@ -50,6 +50,7 @@ from core.handler.find_type_define import FindTypeDefine  # noqa: F401
 from core.handler.find_implementation import FindImplementation  # noqa: F401
 from core.handler.find_references import FindReferences  # noqa: F401
 from core.handler.peek import PeekFindDefine, PeekFindReferences  # noqa: F401
+from core.handler.highlight import Highlight  # noqa: F401
 from core.handler.hover import Hover  # noqa: F401
 from core.handler.signature_help import SignatureHelp  # noqa: F401
 from core.handler.prepare_rename import PrepareRename  # noqa: F401
