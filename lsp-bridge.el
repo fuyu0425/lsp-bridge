@@ -319,7 +319,7 @@ After set `lsp-bridge-completion-obey-trigger-characters-p' to nil, you need use
   :safe #'booleanp
   :group 'lsp-bridge)
 
-(defcustom lsp-bridge-completion-in-string-file-types '("vue" "dart")
+(defcustom lsp-bridge-completion-in-string-file-types '("vue" "dart" "html")
   "File types where completion in string is allowed.
 This is a list of file extensions for which
 LSP-Bridge will enable completion inside string literals."
@@ -450,9 +450,23 @@ LSP-Bridge will enable completion inside string literals."
 Then LSP-Bridge will start by gdb, please send new issue with `*lsp-bridge*' buffer content when next crash."
   :type 'boolean)
 
-(defcustom lsp-bridge-enable-log nil
-  "Enable this option to print log message in `*lsp-bridge*' buffer, default only print message header."
-  :type 'boolean)
+(defcustom lsp-bridge-log-level 'default
+  "Set the log level to print log message in `*lsp-bridge*' buffer, default only print message header.
+
+The variable can have the following values:
+default(INFO)
+debug
+warning
+error
+critical
+which refer to https://docs.python.org/3/library/logging.html#levels for more detail.
+"
+  :type '(choice
+          (const :tag "default log level, which is INFO level" default)
+          (const :tag "only for debug purpose" debug)
+          (const :tag "warning level" warning)
+          (const :tag "error level" error)
+          (const :tag "critical level" critical)))
 
 (defcustom lsp-bridge-enable-profile nil
   "Enable this option to output performance data to ~/lsp-bridge.prof."
@@ -467,6 +481,8 @@ Then LSP-Bridge will start by gdb, please send new issue with `*lsp-bridge*' buf
     (("vue") . "volar_emmet")
     (("ts")  . "typescript_eslint")
     (("tsx") . "typescriptreact_eslint")
+    (("component.html") . "angular_template_html")
+    (("component.ts") . "angular_template_typescript")
     )
   "The multi lang server rule for file extension."
   :type 'cons)
@@ -533,6 +549,10 @@ Possible choices are basedpyright_ruff, pyright_ruff, pyright-background-analysi
   "Default LSP server for XML, you can choose `lemminx', `camells'"
   :type 'string)
 
+(defcustom lsp-bridge-cmake-lsp-server "cmake-language-server"
+  "Default LSP server for cmake, you can choose `cmake-language-server', `neocmakelsp'"
+  :type 'string)
+
 (defcustom lsp-bridge-tsdk-path nil
   "Tsserver lib*.d.ts directory path in current system needed by some lsp servers.
 If nil, lsp-bridge would try to detect by default."
@@ -557,18 +577,18 @@ If nil, lsp-bridge would try to detect by default."
 (defcustom lsp-bridge-single-lang-server-mode-list
   '(
     ((c-mode c-ts-mode c++-mode c++-ts-mode objc-mode c-or-c++-ts-mode) .        lsp-bridge-c-lsp-server)
-    ((cmake-mode cmake-ts-mode) .                                                "cmake-language-server")
+    ((cmake-mode cmake-ts-mode) .                                                lsp-bridge-cmake-lsp-server)
     ((java-mode java-ts-mode) .                                                  "jdtls")
     ((julia-mode) .                                                              "julials")
     ((python-mode python-ts-mode) .                                              lsp-bridge-python-lsp-server)
     ((ruby-mode ruby-ts-mode) .                                                  "solargraph")
-    ((rust-mode rustic-mode rust-ts-mode) .                                      "rust-analyzer")
+    ((rust-mode rustic-mode rust-ts-mode rstml-ts-mode) .                        "rust-analyzer")
     (move-mode .                                                                 "move-analyzer")
     ((elixir-mode elixir-ts-mode heex-ts-mode) .                                 lsp-bridge-elixir-lsp-server)
     ((go-mode go-ts-mode) .                                                      "gopls")
     (groovy-mode .                                                               "groovy-language-server")
     (haskell-mode .                                                              "hls")
-    (lua-mode .                                                                  lsp-bridge-lua-lsp-server)
+    ((lua-mode lua-ts-mode)  .                                                   lsp-bridge-lua-lsp-server)
     (markdown-mode .                                                             lsp-bridge-markdown-lsp-server)
     (dart-mode .                                                                 "dart-analysis-server")
     (scala-mode .                                                                "metals")
@@ -640,7 +660,7 @@ If nil, lsp-bridge would try to detect by default."
     (purescript-mode .                                                           "purescript-language-server")
     (perl-mode .                                                                 "perl-language-server")
     (futhark-mode .                                                              "futhark-lsp")
-    ((toml-mode toml-ts-mode) . "taplo")
+    ((toml-mode toml-ts-mode conf-toml-mode) . "taplo")
     )
   "The lang server rule for file mode."
   :type 'cons)
@@ -655,8 +675,10 @@ If nil, lsp-bridge would try to detect by default."
     ruby-mode-hook
     ruby-ts-mode-hook
     lua-mode-hook
+    lua-ts-mode-hook
     ;; move-mode-hook
     rust-mode-hook
+    rstml-ts-mode-hook
     markdown-mode-hook
     rust-ts-mode-hook
     rustic-mode-hook
@@ -772,6 +794,7 @@ If nil, lsp-bridge would try to detect by default."
     purescript-mode-hook
     perl-mode-hook
     futhark-mode-hook
+    conf-toml-mode-hook
     )
   "The default mode hook to enable lsp-bridge."
   :type '(repeat variable))
@@ -821,6 +844,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (json-mode                  . js-indent-level)  ; JSON
     (json-ts-mode               . js-indent-level)  ; JSON
     (lua-mode                   . lua-indent-level) ; Lua
+    (lua-ts-mode                . lua-ts-indent-offset) ; Lua
     (objc-mode                  . c-basic-offset)   ; Objective C
     (php-mode                   . c-basic-offset)   ; PHP
     (php-ts-mode                . php-ts-mode-indent-offset) ; PHP
@@ -830,7 +854,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (erlang-mode                . erlang-indent-level) ; Erlang
     (ada-mode                   . ada-indent)          ; Ada
     (scad-mode                  . lsp-bridge-indent-two-level) ; OpenSCAD
-    (sml-mode                   . sml-indent-level)    ; Standard ML
+    (sml-mode                   . sml-indent-level) ; Standard ML
     (fuzion-mode                . lsp-bridge-indent-two-level) ; Fuzion
     (fennel-mode                . lsp-bridge-indent-two-level) ; Fennel
     (ttcn3-mode                 . lsp-bridge-indent-four-level) ; TTCN3
@@ -871,6 +895,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (move-mode                  . move-indent-offset)   ; Move
     (rust-mode                  . rust-indent-offset)   ; Rust
     (rust-ts-mode               . rust-ts-mode-indent-offset) ; Rust
+    (rstml-ts-mode              . rust-ts-mode-indent-offset) ; Rust
     (rustic-mode                . rustic-indent-offset)       ; Rust
     (scala-mode                 . scala-indent:step)          ; Scala
     (powershell-mode            . powershell-indent)      ; PowerShell
@@ -885,6 +910,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (svelte-mode                . js-indent-level)        ;Svelte
     (fsharp-mode                . fsharp-indent-offset)   ; F#
     (gleam-ts-mode              . gleam-ts-indent-offset) ; Gleam
+    (conf-toml-mode             . toml-indent-offset)     ; Toml
     (default                    . standard-indent)) ; default fallback
   "A mapping from `major-mode' to its indent variable.")
 
@@ -945,8 +971,8 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
   "Evaluate BODY in buffer with FILEPATH."
   (declare (indent 1))
   `(when-let* ((buffer (pcase ,filehost
-                        ("" (lsp-bridge-get-match-buffer-by-filepath ,filename))
-                        (_ (lsp-bridge-get-match-buffer-by-remote-file ,filehost ,filename)))))
+                         ("" (lsp-bridge-get-match-buffer-by-filepath ,filename))
+                         (_ (lsp-bridge-get-match-buffer-by-remote-file ,filehost ,filename)))))
      (with-current-buffer buffer
        ,@body)))
 
@@ -989,7 +1015,7 @@ So we build this macro to restore postion after code format."
   (cl-dolist (buffer (buffer-list))
     (with-current-buffer buffer
       (when (and (boundp 'lsp-bridge-remote-file-path)
-                 (string-equal lsp-bridge-remote-file-path path)
+                 (lsp-bridge-path-equal lsp-bridge-remote-file-path path)
                  (boundp 'lsp-bridge-remote-file-host)
                  (or (string-equal lsp-bridge-remote-file-host host)
                      ;; host is "127.0.0.1" sent from get_lsp_file_host() when server running inside container
@@ -1019,6 +1045,11 @@ So we build this macro to restore postion after code format."
 
 ;; Call this when buffers are created or killed
 (add-hook 'after-change-major-mode-hook #'lsp-bridge-update-filepath-cache)
+
+(defun lsp-bridge-path-equal (path-a path-b)
+  (cond ((memq system-type '(cygwin windows-nt ms-dos))
+         (string-equal (downcase path-a) (downcase path-b)))
+        (t (string-equal path-a path-b))))
 
 (defun lsp-bridge--get-project-path-func (filename)
   "Get project root path, search order:
@@ -1111,17 +1142,32 @@ So we build this macro to restore postion after code format."
             (message "Cancelled password input.")
             nil))))
 
+(defun lsp-bridge-find-langserver-info-by-extension (file-extension extension-list)
+  (cl-find-if
+   (lambda (pair)
+     (let ((extension (car pair)))
+       (if (eq (type-of extension) 'string)
+           (string-equal file-extension extension)
+         (member file-extension extension))))
+   extension-list))
+
 (defun lsp-bridge-get-lang-server-by-extension (filename extension-list)
   "Get lang server for file extension."
-  (when-let* ((file-extension (file-name-extension filename))
-              (langserver-info (cl-find-if
-                                (lambda (pair)
-                                  (let ((extension (car pair)))
-                                    (if (eq (type-of extension) 'string)
-                                        (string-equal file-extension extension)
-                                      (member file-extension extension))))
-                                extension-list)))
-    (cdr langserver-info)))
+  ;; Don't search from extension list if filename not include any extension name.
+  (when-let* ((dot-pos (cl-position ?. filename))
+              (file-extension (when dot-pos
+                                (substring filename (1+ dot-pos) (length filename)))))
+    (let (langserver-info)
+      ;; Search multi-extension first, to support Angular file, reference https://github.com/manateelazycat/lsp-bridge/pull/1144
+      (setq langserver-info (lsp-bridge-find-langserver-info-by-extension file-extension extension-list))
+
+      ;; Search file extension if multi-extension not found in extension list.
+      (unless langserver-info
+        (setq langserver-info (lsp-bridge-find-langserver-info-by-extension (file-name-extension filename) extension-list)))
+
+      ;; Pick up langserver info.
+      (when langserver-info
+        (cdr langserver-info)))))
 
 (defun lsp-bridge-get-multi-lang-server-by-extension (filename)
   "Get lang server for file extension."
@@ -1288,7 +1334,7 @@ So we build this macro to restore postion after code format."
     ;; start epc server and set `lsp-bridge-server-port'
     (lsp-bridge--start-epc-server)
     (let* ((lsp-bridge-args (append
-                             (when (equal lsp-bridge-python-command "pipx")
+                             (when (member lsp-bridge-python-command '("pipx" "uv"))
                                (list "run"))
                              (list lsp-bridge-python-file)
                              (list (number-to-string lsp-bridge-server-port))
@@ -1513,13 +1559,13 @@ So we build this macro to restore postion after code format."
   (if (functionp pred)
       (condition-case err
           (let ((result (funcall pred)))
-            (when lsp-bridge-enable-log
+            (when (eq lsp-bridge-log-level 'debug)
               (unless result
                 (with-current-buffer (get-buffer-create lsp-bridge-name)
                   (save-excursion
                     (goto-char (point-max))
                     (insert (format "\n*** %s execute predicate '%s' failed with result: '%s'\n"
-                                  current-function pred result))))))
+                                    current-function pred result))))))
             result)
         (error
          (message "Error in predicate '%s': %S at point %S in buffer %S, mode %S"
@@ -1661,7 +1707,7 @@ So we build this macro to restore postion after code format."
   "Hide completion if string before cursor match some special keywords."
   (let ((string (if (bounds-of-thing-at-point 'symbol)
                     (buffer-substring-no-properties (car (bounds-of-thing-at-point 'symbol))
-                                                  (point))
+                                                    (point))
                   (char-to-string (char-before)))))
     (not (when (and (or (derived-mode-p 'ruby-mode)
                         (derived-mode-p 'ruby-ts-mode)
@@ -1672,13 +1718,13 @@ So we build this macro to restore postion after code format."
 (defun lsp-bridge--is-evil-state ()
   "If `evil' mode is enable, only show completion when evil is in insert mode."
   (or (not (featurep 'evil))
-      (evil-insert-state-p)
+      (eq (evil-insert-state-p) evil-mode)
       (evil-emacs-state-p)))
 
 (defun lsp-bridge--is-meow-state ()
   "If `meow' mode is enable, only show completion when meow is in insert mode."
   (or (not (featurep 'meow))
-      meow-insert-mode
+      (eq meow-insert-mode meow-mode)
       (minibufferp)))
 
 (defun lsp-bridge--not-in-multiple-cursors ()
@@ -1780,21 +1826,23 @@ The line number is relative to the beginning of the source block."
 
 (defun lsp-bridge-monitor-before-change (begin end)
   ;; Use `save-match-data' protect match data, avoid conflict with command call `search-regexp'.
-  (save-match-data
-    (when (lsp-bridge-has-lsp-server-p)
-      ;; Send whole org src block to lsp server.
-      (lsp-bridge-org-babel-send-src-block-to-lsp-server))
+  (save-restriction
+    (widen)
+    (save-match-data
+      (when (lsp-bridge-has-lsp-server-p)
+        ;; Send whole org src block to lsp server.
+        (lsp-bridge-org-babel-send-src-block-to-lsp-server))
 
-    ;; Set `lsp-bridge--before-change-begin-pos' and `lsp-bridge--before-change-end-pos'
-    ;; if `lsp-bridge-has-lsp-server-p' or `lsp-bridge-is-remote-file'
-    (when (or (lsp-bridge-has-lsp-server-p)
-              (lsp-bridge-is-remote-file))
-      (setq-local lsp-bridge--before-change-begin-point begin)
-      (setq-local lsp-bridge--before-change-end-point end)
+      ;; Set `lsp-bridge--before-change-begin-pos' and `lsp-bridge--before-change-end-pos'
+      ;; if `lsp-bridge-has-lsp-server-p' or `lsp-bridge-is-remote-file'
+      (when (or (lsp-bridge-has-lsp-server-p)
+                (lsp-bridge-is-remote-file))
+        (setq-local lsp-bridge--before-change-begin-point begin)
+        (setq-local lsp-bridge--before-change-end-point end)
 
-      (setq-local lsp-bridge--before-change-begin-pos (lsp-bridge--point-position begin))
-      (setq-local lsp-bridge--before-change-end-pos (lsp-bridge--point-position end))
-      )))
+        (setq-local lsp-bridge--before-change-begin-pos (lsp-bridge--point-position begin))
+        (setq-local lsp-bridge--before-change-end-pos (lsp-bridge--point-position end))
+        ))))
 
 (defun lsp-bridge-monitor-post-self-insert ()
   ;; Make sure this function be called after `electric-pair-mode'
@@ -1824,17 +1872,19 @@ The line number is relative to the beginning of the source block."
     (unless (and (equal begin lsp-bridge--before-change-begin-point)
                  (equal end lsp-bridge--before-change-end-point))
       ;; Use `save-match-data' protect match data, avoid conflict with command call `search-regexp'.
-      (save-match-data
-        (unless lsp-bridge-revert-buffer-flag
-          (let ((change-text (buffer-substring-no-properties begin end)))
-            ;; Record last command to `lsp-bridge-last-change-command'.
-            (setq lsp-bridge-last-change-command (format "%s" this-command))
+      (save-restriction
+        (widen)
+        (save-match-data
+          (unless lsp-bridge-revert-buffer-flag
+            (let ((change-text (buffer-substring-no-properties begin end)))
+              ;; Record last command to `lsp-bridge-last-change-command'.
+              (setq lsp-bridge-last-change-command (format "%s" this-command))
 
-            ;; Record last change position to avoid popup outdate completions.
-            (lsp-bridge-record-last-change-position)
+              ;; Record last change position to avoid popup outdate completions.
+              (lsp-bridge-record-last-change-position)
 
-            ;; Set `lsp-bridge-last-change-is-delete-command-p'
-            (setq lsp-bridge-last-change-is-delete-command-p (> length 0))
+              ;; Set `lsp-bridge-last-change-is-delete-command-p'
+              (setq lsp-bridge-last-change-is-delete-command-p (> length 0))
 
             ;; reset manual complete flag
             (when lsp-bridge-last-change-is-delete-command-p
@@ -1843,36 +1893,36 @@ The line number is relative to the beginning of the source block."
             ;; Sync change for org babel if we enable it
             (lsp-bridge-org-babel-monitor-after-change begin end length)
 
-            ;; Send LSP requests.
-            (when (or (lsp-bridge-call-file-api-p)
-                      (lsp-bridge-is-remote-file))
+              ;; Send LSP requests.
+              (when (or (lsp-bridge-call-file-api-p)
+                        (lsp-bridge-is-remote-file))
 
-              ;; Uncomment below code to debug `change_file' protocol.
-              ;; (message (format "change_file: '%s' '%s' '%s' '%s' '%s' '%s'"
-              ;;                  length
-              ;;                  lsp-bridge--before-change-begin-pos
-              ;;                  lsp-bridge--before-change-end-pos
-              ;;                  (lsp-bridge--position)
-              ;;                  change-text
-              ;;                  (buffer-substring-no-properties (line-beginning-position) (point))
-              ;;                  ))
+                ;; Uncomment below code to debug `change_file' protocol.
+                ;; (message (format "change_file: '%s' '%s' '%s' '%s' '%s' '%s'"
+                ;;                  length
+                ;;                  lsp-bridge--before-change-begin-pos
+                ;;                  lsp-bridge--before-change-end-pos
+                ;;                  (lsp-bridge--position)
+                ;;                  change-text
+                ;;                  (buffer-substring-no-properties (line-beginning-position) (point))
+                ;;                  ))
 
-              ;; Send change_file request to trigger LSP completion.
-              (lsp-bridge-call-file-api "change_file"
-                                        lsp-bridge--before-change-begin-pos
-                                        lsp-bridge--before-change-end-pos
-                                        length
-                                        change-text
-                                        (lsp-bridge--position)
-                                        (acm-char-before)
-                                        (buffer-name)
-                                        (acm-get-input-prefix))
+                ;; Send change_file request to trigger LSP completion.
+                (lsp-bridge-call-file-api "change_file"
+                                          lsp-bridge--before-change-begin-pos
+                                          lsp-bridge--before-change-end-pos
+                                          length
+                                          change-text
+                                          (lsp-bridge--position)
+                                          (acm-char-before)
+                                          (buffer-name)
+                                          (acm-get-input-prefix))
 
-              ;; Send inlay hint request.
-              (lsp-bridge-inlay-hint-try-send-request))
+                ;; Send inlay hint request.
+                (lsp-bridge-inlay-hint-try-send-request))
 
-            ;; Complete other non-LSP backends.
-            (lsp-bridge-complete-other-backends)
+              ;; Complete other non-LSP backends.
+              (lsp-bridge-complete-other-backends)
 
             ;; Update search words backend.
             ;;
@@ -1884,7 +1934,7 @@ The line number is relative to the beginning of the source block."
                  lsp-bridge--before-change-begin-pos
                  lsp-bridge--before-change-end-pos
                  change-text)))
-            ))))))
+            )))))))
 
 (defun lsp-bridge-complete-other-backends ()
   (let* ((this-command-string (format "%s" this-command))
@@ -2006,7 +2056,10 @@ The line number is relative to the beginning of the source block."
                                  (if (and (file-name-directory file-path) (file-exists-p (file-name-directory file-path)))
                                      (progn
                                        (throw 'break file-path))
-                                   (goto-char (1- file-beg))))
+                                   (if (eq file-beg 1)
+                                       ;; Reached beginning of buffer
+                                       (throw 'break nil)
+                                     (goto-char (1- file-beg)))))
                              (throw 'break nil))))))))
     filepath))
 
@@ -2171,10 +2224,10 @@ Off by default."
 (defun lsp-bridge-find-def-fallback (position)
   (if (not (= (length lsp-bridge-peek-ace-list) 0))
       (progn
-	(if (nth 0 lsp-bridge-peek-ace-list)
-	    (kill-buffer (nth 0 lsp-bridge-peek-ace-list)))
-	(switch-to-buffer (nth 2 lsp-bridge-peek-ace-list))
-	(goto-char (nth 1 lsp-bridge-peek-ace-list))))
+	    (if (nth 0 lsp-bridge-peek-ace-list)
+	        (kill-buffer (nth 0 lsp-bridge-peek-ace-list)))
+	    (switch-to-buffer (nth 2 lsp-bridge-peek-ace-list))
+	    (goto-char (nth 1 lsp-bridge-peek-ace-list))))
   (message "[LSP-Bridge] No definition found.")
   (if (functionp lsp-bridge-find-def-fallback-function)
       (funcall lsp-bridge-find-def-fallback-function position)))
@@ -2392,6 +2445,12 @@ Then we need call `lsp-bridge--set-mark-ring-in-new-buffer' in new buffer after 
   (switch-to-buffer-other-window
    (get-buffer-create lsp-bridge-buffer-documentation-buffer) norecord))
 
+(defun lsp-bridge-replace-html-entities ()
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward "&nbsp;" nil t)
+      (replace-match " "))))
+
 (defun lsp-bridge-show-documentation--callback (value)
   (let ((buffer (get-buffer-create lsp-bridge-buffer-documentation-buffer)))
     (with-current-buffer buffer
@@ -2401,6 +2460,7 @@ Then we need call `lsp-bridge--set-mark-ring-in-new-buffer' in new buffer after 
         (setq value (acm-doc-python--filter-nbsp value)))
       (insert value)
       (goto-char (point-min))
+      (lsp-bridge-replace-html-entities)
       (setq-local truncate-lines nil)
       (acm-markdown-render-content t)
       (read-only-mode 1)
@@ -2447,6 +2507,7 @@ Then we need call `lsp-bridge--set-mark-ring-in-new-buffer' in new buffer after 
       (when (eq lsp-bridge-documentation-mode 'python-mode)
         (setq value (acm-doc-python--filter-nbsp value)))
       (insert value)
+      (lsp-bridge-replace-html-entities)
       (setq-local truncate-lines nil)
       (acm-markdown-render-content))
 
@@ -2577,17 +2638,6 @@ Default is `bottom-right', you can choose other value: `top-left', `top-right', 
   "Enable LSP Bridge mode."
 
   (add-hook 'post-command-hook #'lsp-bridge-start-process)
-
-  (when lsp-bridge-disable-electric-indent
-    ;; NOTE:
-    ;; Don't enable `electric-indent-mode' in lsp-bridge, `electric-indent-post-self-insert-function'
-    ;;
-    ;; It will try adjust line indentation *AFTER* user insert character,
-    ;; this additional indent action send excessive `change_file' request to lsp server.
-    ;; LSP server will confused those indent action and return wrong completion candidates.
-    ;;
-    ;; Example, when you enable `electric-indent-mode', when you type `std::', you will got wrong completion candidates from LSP server.
-    (electric-indent-local-mode -1))
 
   ;; Don't enable lsp-bridge when current buffer is acm buffer.
   (unless (or (equal (buffer-name (current-buffer)) acm-buffer)
@@ -3211,20 +3261,6 @@ then BODY is executed within that buffer."
 (defun lsp-bridge-tramp-show-hostnames ()
   (interactive)
   (lsp-bridge-call-async "message_hostnames"))
-
-
-(defcustom lsp-bridge-disable-electric-indent nil
-  "`electric-indent-post-self-insert-function' will cause return wrong completion candidates from LSP server, such as type `std::' in C++.
-
-Please turn this option on if you want fix `std::' completion candidates, at same time, `electric-indent-mode' will disable by lsp-bridge.
-
-Please keep this option off if you need `electric-indent-mode' feature more.
-
-It's a bug of `electric-indent-mode' that it will try adjust line indentation *AFTER* user insert character,
-this additional indent action send excessive `change_file' request to lsp server.
-LSP server will confused those indent action and return wrong completion candidates.
-
-I haven't idea how to make lsp-bridge works with `electric-indent-mode', PR are welcome.")
 
 
 (defun lsp-bridge-sync-tramp-remote (force)

@@ -21,6 +21,7 @@
 
 import json
 import os
+import platform
 import queue
 import re
 import subprocess
@@ -30,7 +31,10 @@ from subprocess import PIPE
 from sys import stderr
 from typing import TYPE_CHECKING, Dict
 from urllib.parse import urlparse
-from watchdog.observers import Observer
+if platform.system() == "Darwin":
+    from watchdog.observers.kqueue import KqueueObserver
+else:
+    from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 from core.handler import Handler
@@ -285,6 +289,7 @@ class LspServer:
         self.workspace_symbol_provider = False
         self.inlay_hint_provider = False
         self.semantic_tokens_provider = False
+        self.diagnostic_provider = False  # pull based diagnostic
 
         # It's confused about LSP server's textDocumentSync capability.
         # Python LSP server only have `willSave` field
@@ -480,8 +485,18 @@ class LspServer:
                     "versionSupport": self.enable_diagnostics,
                     "codeDescriptionSupport": self.enable_diagnostics,
                     "dataSupport": self.enable_diagnostics
-                }
-            }
+                },
+                "diagnostic": {
+                    "relatedInformation": self.enable_diagnostics,
+                    "tagSupport": {
+                        "valueSet": [1, 2]
+                    },
+                    "codeDescriptionSupport": self.enable_diagnostics,
+                    "dataSupport": self.enable_diagnostics,
+                    "dynamicRegistration": False,
+                    "relatedDocumentSupport": False
+                },
+            },
         })
 
         return merge_capabilites
@@ -786,7 +801,9 @@ class LspServer:
             ]),
             ("save_include_text", ["result", "capabilities", "textDocumentSync", "save", "includeText"]),
             ("text_document_sync", ["result", "capabilities", "textDocumentSync"]),
-            ("semantic_tokens_provider", ["result", "capabilities", "semanticTokensProvider"])]
+            ("semantic_tokens_provider", ["result", "capabilities", "semanticTokensProvider"]),
+            ("diagnostic_provider", ["result", "capabilities", "diagnosticProvider"]),
+        ]
 
         for attr, path in attributes_to_set:
             self.set_attribute_from_message(message, attr, path)
@@ -883,10 +900,15 @@ class LspServer:
     def handle_register_capability_message(self, message):
         if "method" in message and message["method"] in ["client/registerCapability"]:
             try:
-                if message["params"]["registrations"][0]["id"] == "workspace/didChangeWatchedFiles":
-                    workspace_watch_files = self.parse_workspace_watch_files(message["params"])
-                    self.monitor_workspace_files(workspace_watch_files)
-                    log_time("Add workspace watch files: {}".format(workspace_watch_files))
+                for registration in message["params"]["registrations"]:
+                    if registration["method"] == "workspace/didChangeWatchedFiles":
+                        workspace_watch_files = self.parse_workspace_watch_files(message["params"])
+                        self.monitor_workspace_files(workspace_watch_files)
+                        log_time("Add workspace watch files: {}".format(workspace_watch_files))
+                    elif registration["method"] == "textDocument/formatting":
+                        self.code_format_provider = True
+                    elif registration["method"] == "textDocument/rangeFormatting":
+                        self.range_format_provider = True
             except:
                 log_time(traceback.format_exc())
 
@@ -908,7 +930,10 @@ class LspServer:
 
     def start_workspace_watch_files(self):
         if self.workspace_file_watcher is None:
-            self.workspace_file_watcher = Observer()
+            if platform.system() == "Darwin":
+                self.workspace_file_watcher = KqueueObserver()
+            else:
+                self.workspace_file_watcher = Observer()
             self.workspace_file_watcher.start()
 
         if self.workspace_file_watch_handler is None:

@@ -2,11 +2,11 @@
 <a href="https://github.com/manateelazycat/lsp-bridge/actions/workflows/test.yml"><img src="https://github.com/manateelazycat/lsp-bridge/actions/workflows/test.yml/badge.svg"/></a> <a href ="https://github.com/manateelazycat/lsp-bridge/blob/master/README.zh-CN.md"><img src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-555555.svg"/></a>
 
 <hr>
-  <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#installation"><strong>Installation</strong></a> • 
-  <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#supported-language-servers"><strong>Support languages</strong></a> • 
+  <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#installation"><strong>Installation</strong></a> •
+  <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#supported-language-servers"><strong>Support languages</strong></a> •
   <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#keymap"><strong>Keymaps</strong></a> •
   <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#lsp-server-options"><strong>Customize options</strong></a> •
-  <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#join-development"><strong>Join development</strong></a> 
+  <a href="https://github.com/manateelazycat/lsp-bridge?tab=readme-ov-file#join-development"><strong>Join development</strong></a>
 <hr>
 
 
@@ -32,7 +32,7 @@ Advantages of lsp-bridge:
 ## Installation
 
 1. Install Emacs 28 or higher version
-2. Install Python dependencies: `pip3 install epc orjson sexpdata six setuptools paramiko rapidfuzz watchdog` (orjson is optional, orjson is based on Rust, providing faster JSON parsing performance)
+2. Install Python dependencies: `pip3 install epc orjson sexpdata six setuptools paramiko rapidfuzz watchdog packaging` (orjson is optional, orjson is based on Rust, providing faster JSON parsing performance). 
 3. Install Elisp dependencies: [markdown-mode](https://github.com/jrblevin/markdown-mode), [yasnippet](https://github.com/joaotavora/yasnippet)
 
 4. Download this repository using git clone, and replace the load-path path in the configuration below.
@@ -48,7 +48,7 @@ Advantages of lsp-bridge:
 (global-lsp-bridge-mode)
 ```
 
-Note: To use completion in terminal, please install the compiled tty-child-frames branch of Emacs
+Note: To enable completion in the terminal, please install the latest version of Emacs, which supports tty-child-frames.
 
 * If you are using straight to install, you should use the following configuration to install:
 
@@ -82,7 +82,6 @@ and add this to your `config.el`
 ``` elisp
 (use-package! lsp-bridge
   :config
-  (setq lsp-bridge-enable-log nil)
   (global-lsp-bridge-mode))
 ```
 
@@ -268,14 +267,15 @@ lsp-bridge provides support for more than two language servers for many language
 - `lsp-bridge-csharp-lsp-server`: C# language server, you can choose `omnisharp-mono`, `omnisharp-dotnet` or `csharp-ls`, note that you need to give **execute permissions** to the OmniSharp file
 - `lsp-bridge-python-multi-lsp-server`: Python multi-language servers, you can choose `basedpyright_ruff`, `pyright_ruff`, `jedi_ruff`, `python-ms_ruff`, `pylsp_ruff`
 - `lsp-bridge-nix-lsp-server`: Nix language server, you can choose `rnix-lsp`, `nixd` or `nil`
-- `lsp-bridge-markdown-lsp-server`: Markdown language server, you can choose `vale-ls` or `marksman` 
-- `lsp-bridge-lua-lsp-server`: Lua language server, you can choose `sumneko` or `lua-lsp` 
+- `lsp-bridge-markdown-lsp-server`: Markdown language server, you can choose `vale-ls` or `marksman`
+- `lsp-bridge-lua-lsp-server`: Lua language server, you can choose `sumneko` or `lua-lsp`
 - `lsp-bridge-verilog-lsp-server`: Verilog language server， you can choose `verible`, or `svls`
 - `lsp-bridge-xml-lsp-server`: XML language server， you can choose `lemminx`, or `camells`
+- `lsp-bridge-cmake-lsp-server`: CMake language server， you can choose `cmake-language-server`, or `neocmakelsp`
 
 ## Options
 
-- `lsp-bridge-python-command`: The path of the python command, if you use `conda`, you may customize this option. Windows platform using `python.exe` rather than `python3`, if lsp-bridge can’t work, try set to `python3`
+- `lsp-bridge-python-command`: The path of the python command, if you use `conda`, you may customize this option. Windows platform using `python.exe` rather than `python3`, if lsp-bridge can’t work, try set to `python3`. If you set `pipx` or `uv`, these are translated to `pipx run` or `uv run` which execute the lsp_bridge.py in a temporal virtual environment where dependencies are automatically installed.
 - `lsp-bridge-complete-manually`: Only popup completion menu when user call `lsp-bridge-popup-complete-menu` command, default is nil
 - `lsp-bridge-enable-with-tramp`: When this option is enabled, lsp-bridge provides remote autocompletion support for files opened by tramp. It requires the lsp_bridge.py to be installed and started on the server side in advance. Note that this option only uses tramp to open files, it does not use tramp technology to implement autocompletion, because the implementation principle of tramp has serious performance issues. 'One should note that if you usually use the command `lsp-bridge-open-remote-file`, you need to disable the option `lsp-bridge-enable-with-tramp` to ensure that the file opened by the command can correctly jump to the definitions or references.
 - `lsp-bridge-remote-save-password`: Saves the password for remote editing to the netrc file, disabled by default
@@ -294,7 +294,7 @@ lsp-bridge provides support for more than two language servers for many language
 - `lsp-bridge-enable-search-words`: index the word of the file, enable by default
 - `lsp-bridge-enable-auto-format-code`: automatic format code, disable by default
 - `lsp-bridge-enable-signature-help`: show function parameter in minibufer, enable by default
-- `lsp-bridge-enable-log`: enable LSP message log, disable by default, only enable this option for development purposes, usually do not turn on this option to avoid affecting performance
+- `lsp-bridge-log-level`: set LSP message level. see the `descript-variable lsp-bridge-log-level` for more detail, usually do no set it `debug` to avoid affecting performance
 - `lsp-bridge-enable-debug`: enable program debugging, disable by default
 - `lsp-bridge-disable-backup`: forbidden version manage of emacs, enable by default
 - `lsp-bridge-code-action-enable-popup-menu`: enable code action popup menu, enable by default
@@ -322,7 +322,7 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-enable-icon`: Whether the completion menu displays icons (Many macOS users have reported that emacs-plus28 cannot display icons properly, showing colored squares instead. There are two ways to solve this: install Emacs Mac Port or add the `--with-rsvg` option to the brew command when compiling Emacs yourself)
 - `acm-enable-tabnine`: Enable tabnine support， enable by default， when enable need execute `lsp-bridge-install-tabnine` command to install TabNine, and it can be used. TabNine will consume huge CPUs, causing your entire computer to be slow. If the computer performance is not good, it is not recommended to enable this option
 - `acm-enable-codeium`: Enable Codeium support, when enable need execute `lsp-bridge-install-update-codeium` command to install Codeium, then execute `lsp-bridge-codeium-auth` command to get auth token and execute `lsp-bridge-codeium-input-auth-token` command to get API Key, and it can be used.
-- `acm-enable-copilot`: Enable copilot support, firstly, purchase the Copilot service by https://github.com/features/copilot , when enable need install agent first `npm install -g copilot-node-server@1.14.0`, then execute `lsp-bridge-copilot-login`, lsp-bridge will display User Code in the Minibuffer, copy the User Code to the opened Copilot page to complete the login.
+- `acm-enable-copilot`: Enable copilot support, firstly, purchase the Copilot service by https://github.com/features/copilot , when enable need install agent first `npm install -g @github/copilot-language-server`, then execute `lsp-bridge-copilot-login`, lsp-bridge will display User Code in the Minibuffer, copy the User Code to the opened Copilot page to complete the login.
 - `acm-enable-search-file-words`: Whether the complete menu display the word of the file, enable by default
 - `acm-enable-quick-access`: Whether to display an index after the icon, quickly select candidate words using Alt + Number, default is off
 - `acm-quick-access-use-number-select`: Whether to use number keys for quick selection of candidate words, default is off, turning on this option may sometimes interfere with number input or accidentally select candidate words
@@ -361,6 +361,7 @@ If your language supports mixed multi-language servers, it is recommended to che
 |:------------|:---------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Ada         | [ada_language_server](https://github.com/AdaCore/ada_language_server)                      |                                                                 |
 | Ansible     | [ansible-language-server](https://github.com/ansible/ansible-language-server)                      | Ansible uses YAML as source code, you’ll need to customize `lsp-bridge-get-single-lang-server-by-project` to return "ansible-language-server".                                                                                                                      |
+| Angular     | [angular-language-server](https://github.com/angular/vscode-ng-language-service)                      | `npm i -g @angular/language-server @angular/language-service typescript emmet-ls vscode-langservers-extracted typescript-language-server`                                                                                                                  |
 | Astro       | [astro](https://github.com/withastro/language-tools/tree/main/packages/language-server)            | `npm i -g @astrojs/language-server`                                                                                                                                                                                                                                 |
 | Ballerina        | [ballerina-lang-server](https://github.com/ballerina-platform/ballerina-lang)                           |                                                                                                                                                                                                                               |
 | Bash        | [bash-language-server](https://github.com/bash-lsp/bash-language-server)                           |                                                                                                                                                                                                                                                                     |
@@ -368,6 +369,7 @@ If your language supports mixed multi-language servers, it is recommended to che
 | BibTex   | [citation-langserver](https://github.com/oncomouse/citation-langserver)               |   |
 | Clojure     | [clojure-lsp](https://github.com/clojure-lsp/clojure-lsp)                                          | If you use `homebrew`, please ensure install `clojure-lsp/brew/clojure-lsp-native` [clojure-lsp-native](https://clojure-lsp.io/installation/#homebrew-macos-and-linux)                                                                                             |
 | Cmake       | [cmake-language-server](https://github.com/regen100/cmake-language-server)                         | `pip install cmake-language-server`                                                                                                                                                                                                                                 |
+|            | [neocmakelsp](https://github.com/neocmakelsp/neocmakelsp)                         |                                                                                                                                                                                            |
 | Cobol       | [che-che4z-lsp-for-cobol](https://github.com/eclipse-che4z/che-che4z-lsp-for-cobol)                         |                                                                                                                                |
 | CSS         | [vscode-css-language-server](https://github.com/hrsh7th/vscode-langservers-extracted)              | `npm i -g vscode-langservers-extracted`                                                                                                                                                                                                                             |
 | Cucumber         | [cucumber-language-server](https://github.com/cucumber/language-server)              | `npm install @cucumber/language-server`                                                                                                                                                                                       |
@@ -393,7 +395,7 @@ If your language supports mixed multi-language servers, it is recommended to che
 | Futhark     | [futhark-lsp](https://futhark-lang.org)                                         |                                                                                                                                                                                                                               |
 | Fuzion     | [fuzion-lsp-server](https://github.com/tokiwa-software/fuzion-lsp-server)                                         |                                                                                                                                                                                                                               |
 | F#          | [fsautocomplete](https://github.com/fsharp/FsAutoComplete)                                         |                                                                                                                                                                                                                                                                     |
-| Gleam       | [gleam lsp](https://gleam.run/news/v0.21-introducing-the-gleam-language-server/)                   |                                                                                                                                                                                
+| Gleam       | [gleam lsp](https://gleam.run/news/v0.21-introducing-the-gleam-language-server/)                   |
 | GLSL        | [glsl-language-server](https://github.com/svenstaro/glsl-language-server)                   |                                                                                                                                                                                                                               |
 | Go          | [gopls](https://github.com/golang/tools/tree/master/gopls)                                         | Make sure install [go-mode](https://github.com/dominikh/go-mode.el) and `gopls` in PATH, please do `ln -s ~/go/bin/gopls ~/.local/bin`, and do `go mod init` first                                                                                                    |
 | GraphQL     | [graphql-lsp](https://github.com/graphql/graphiql/tree/main/packages/graphql-language-service-cli) |                                                                                                                                                                                                                                                                     |
@@ -438,7 +440,7 @@ If your language supports mixed multi-language servers, it is recommended to che
 |             | [basedpyright](https://detachhead.github.io/basedpyright)                                                    | `pip install basedpyright`, `lsp-bridge-python-lsp-server` set to `basedpyright`                                                                                                                   |
 |             | [pyright](https://github.com/microsoft/pyright)                                                    | `lsp-bridge-python-lsp-server` set to `pyright`, `pyright-background-analysis` is faster sometimes, but it can’t response diagnostic informations                                                                                                                   |
 |             | [python-ms](https://github.com/microsoft/python-language-server)                                   | Legacy language server for Python2                                                                                                                                                                                                                                  |
-|             | [ruff](https://github.com/charliermarsh/ruff-lsp)                                                  | `pip install ruff-lsp`, `lsp-bridge-python-lsp-server` is set to `ruff`, which only has the function of linter. If you need to complete the functions, install other Python language servers, and set the `lsp-bridge-python-multi-lsp-server` to `[LSP NAME]_ruff` |
+|             | [ruff](https://github.com/astral-sh/ruff)                                                          | `pip install ruff`, `lsp-bridge-python-lsp-server` is set to `ruff`, which only has the function of linter. If you need to complete the functions, install other Python language servers, and set the `lsp-bridge-python-multi-lsp-server` to `[LSP NAME]_ruff` |
 | QML         | [qmlls](https://github.com/qt/qtdeclarative/tree/dev/tools/qmlls)                                  | The `qmlls` binary should be part of the normal Qt packages since Qt 6.3.0 Ensure that the directory of `qmlls` binary file is in PATH                                                                                                                              |
 | Puppet           | [puppet-languageserver](https://github.com/puppetlabs/puppet-editor-services)                                |                                                                                                                                                                                                                               |
 | R           | [rlanguageserver](https://github.com/REditorSupport/languageserver)                                |                                                                                                                                                                                                                                                                     |
@@ -457,6 +459,7 @@ If your language supports mixed multi-language servers, it is recommended to che
 | Swift       | [sourcekit-lsp](https://github.com/apple/sourcekit-lsp)                                            | The SourceKit-LSP server is included with the Swift toolchain.                                                                                                                                                                                                      |
 | Tailwindcss | [tailwindcss-language-server](https://www.npmjs.com/package/@tailwindcss/language-server)          | `npm install -g @tailwindcss/language-server` , and need config `tailwind.config.js` follow [install manual](https://tailwindcss.com/docs/installation)                                                                                                                 |
 | Terraform | [terraform-ls](https://github.com/hashicorp/terraform-ls)          |                                                                        |
+| Toml | [taplo](https://github.com/tamasfe/taplo) | `cargo install taplo-cli --features lsp`, or follow [installation manual](https://taplo.tamasfe.dev/cli/installation/binary.html) |
 | TTCN-3  | [ntt](https://github.com/nokia/ntt)             |                                                                                                                                                                                                                               |
 | Typescript  | [typescript](https://github.com/typescript-language-server/typescript-language-server)             |                                                                                                                                                                                                                                                                     |
 | Typst       | [typst-lsp](https://github.com/nvarner/typst-lsp)                                                  |                                                                                                                                                                                                                                                                     |
@@ -616,7 +619,7 @@ Please read below articles first:
 - [In-depth Analysis of the LSP Protocol](https://manateelazycat.github.io/2024/06/11/lsp-trick/)
 - [lsp-bridge Wiki](https://github.com/manateelazycat/lsp-bridge/wiki)
 
-Then turn on develop option `lsp-bridge-enable-log` and happy hacking! ;)
+Then set option `lsp-bridge-log-level` to `debug` and happy hacking! ;)
 
 ## Report bug
 
@@ -625,7 +628,7 @@ Then turn on develop option `lsp-bridge-enable-log` and happy hacking! ;)
 Please use `emacs -q` and load a minimal setup with only lsp-bridge to verify that the bug is reproducible. If `emacs -q` works fine, probably something is wrong with your Emacs config.
 
 If the problem still exists:
-1. Turn on option `lsp-bridge-enable-log`
+1. Set option `lsp-bridge-log-level` to `debug`
 2. Use `lsp-bridge-restart-process` to restart the `LSP-BRIDGE` process
 3. Report issue with `*lsp-bridge*` buffer content, it contains many clues that can help us locate the problem faster
 

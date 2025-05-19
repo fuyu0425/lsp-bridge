@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 from threading import Thread
-from typing import Optional
+from typing import Optional, List
 from urllib.parse import urlparse
 
 import sexpdata
@@ -205,7 +205,7 @@ def eval_in_emacs(method_name, *args):
             "sexp": [sexp]
         })
     else:
-        epc_client.call("eval-in-emacs", [sexp])    # type: ignore
+        eval_sexps_in_emacs([sexp])
 
 def message_emacs(message: str):
     """Message to Emacs with prefix."""
@@ -231,7 +231,7 @@ def epc_arg_transformer(arg):
     type_dict_p = len(arg) % 2 == 0
     if type_dict_p:
         for v in arg[::2]:
-            if type(v) != sexpdata.Symbol or not v.value().startswith(":"):
+            if not isinstance(v, sexpdata.Symbol) or not v.value().startswith(":"):
                 type_dict_p = False
                 break
 
@@ -474,8 +474,11 @@ def split_docker_path(docker_path):
 def is_remote_path(filepath):
     return filepath.startswith("/ssh:") or filepath.startswith("/docker:")
 
-def eval_sexp_in_emacs(sexp):
-    epc_client.call("eval-in-emacs", [sexp])
+def eval_sexps_in_emacs(sexps: List[str]):
+    if isinstance(sexps, str):
+        sexps = [sexps]
+        logger.warning(f"Fixed argument type. The sexp argument should be a list of sexps but got: {sexps}")
+    epc_client.call("eval-in-emacs", sexps)
 
 def string_to_base64(text):
     import base64
@@ -503,9 +506,9 @@ def replace_template(arg, project_path=None):
         # pyright use `--cancellationReceive` option enable "background analyze" to improve completion performance.
         return arg.replace("%FILEHASH%", os.urandom(21).hex())
     elif "%USERPROFILE%" in arg:
-        return arg.replace("%USERPROFILE%", windows_get_env_value("USERPROFILE"))
+        return arg.replace("%USERPROFILE%", repr(windows_get_env_value("USERPROFILE")).strip("'"))
     elif "%TSDK_PATH%" in arg:
-        return arg.replace("%TSDK_PATH%", get_emacs_func_result("get-user-tsdk-path"))
+        return arg.replace("%TSDK_PATH%", repr(get_emacs_func_result("get-user-tsdk-path")).strip("'"))
     else:
         return arg
 
