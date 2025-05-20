@@ -1067,7 +1067,34 @@ The key of candidate will change between two LSP results."
   "Get current candidate with menu index and offset."
   (nth (+ acm-menu-offset acm-menu-index) acm-candidates))
 
+(defun acm-menu-candidates-preprocess ()
+  "Preprocess menu candidates."
+  (setq acm-menu-candidates
+        (mapcar (lambda (candidate)
+                  (let* ((backend (plist-get candidate :backend))
+                         (display-label (plist-get candidate :displayLabel)))
+                    ;; special handling for copilot
+                    ;; only show trailing parts like VSCode Copilot.
+                    (when (and acm-enable-copilot
+                               acm-backend-copilot-show-trailing
+                               (string-equal backend "copilot"))
+                      (let* ((line-text (with-current-buffer lsp-bridge--last-buffer
+                                          (buffer-substring-no-properties (line-beginning-position) (point))))
+                             (copilot-line display-label)
+                             (trimmed (string-trim-left line-text))
+                             (prefix (if (string-match ".*\\s-+" trimmed)
+                                         (match-string 0 trimmed)
+                                       ""))
+                             (prefix-len (length prefix))
+                             (trailing-text (if (string-prefix-p prefix copilot-line)
+                                                (substring copilot-line prefix-len)
+                                              copilot-line)))
+                        (plist-put candidate :displayLabel trailing-text)))
+                    candidate))
+                acm-menu-candidates)))
+
 (defun acm-menu-render (menu-old-cache)
+  (acm-menu-candidates-preprocess)
   (let* ((items acm-menu-candidates)
          (menu-old-max-length (car menu-old-cache))
          (menu-old-number (cdr menu-old-cache))

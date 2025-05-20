@@ -29,6 +29,10 @@
   :type 'string
   :group 'acm-backend-copilot)
 
+(defcustom acm-backend-copilot-show-trailing nil
+  "Show only the trailing parts for copilot. (like the VSCode)"
+  :group 'acm-backend-copilot)
+
 (defcustom acm-backend-copilot-accept nil
   "Send accept request."
   :type 'boolean
