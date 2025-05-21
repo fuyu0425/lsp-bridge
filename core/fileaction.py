@@ -360,40 +360,6 @@ class FileAction:
 
     def get_workspace_diagnostics(self, hide_severities=None):
         diagnostics = []
-        diagnostic_count = 0
-        # either single_server or multi_servers
-        if self.single_server:
-            for file_path, fa in self.single_server.files.items():
-                fa_diagnostics = fa.diagnostics;
-                for server_name in fa_diagnostics:
-                    for diagnostic in fa_diagnostics[server_name]:
-                        if hide_severities and diagnostic["severity"] in hide_severities:
-                            continue
-                        diagnostic["server-name"] = server_name
-                        diagnostic["file-path"] = file_path
-                        diagnostics.append(diagnostic)
-
-                        diagnostic_count += 1
-
-                        if diagnostic_count >= self.diagnostics_max_number:
-                            return diagnostics
-        elif self.multi_servers:
-            # TODO: use python for checking
-            pass
-
-        return diagnostics
-
-    def list_workspace_diagnostics(self, hide_severities):
-        dianostics = self.get_workspace_diagnostics(hide_severities)
-        diagnostic_count = len(dianostics)
-
-        if diagnostic_count == 0:
-            message_emacs("No diagnostics found.")
-        else:
-            eval_in_emacs("lsp-bridge-diagnostic--list-workspace", dianostics)
-
-    def get_workspace_diagnostics2(self, hide_severities=None):
-        diagnostics = []
         diagnostic_counter = 0
         diagnostics_content = ""
         diagnostics_dict = {}
@@ -428,16 +394,18 @@ class FileAction:
         diagnostic_counter = 0 # reset for counting
         for file_path, diagnostics in diagnostics_dict.items():
             if len(diagnostics) > 0:
-                diagnostics_content += "".join(["\n", REFERENCE_PATH, file_path, REFERENCE_ENDC, "\n"])
+                if diagnostic_counter > 0:
+                    diagnostics_content += "\n"
+                diagnostics_content += "".join([REFERENCE_PATH, file_path, REFERENCE_ENDC, "\n"])
             for diagnostic in diagnostics:
                 diagnostic_counter +=1
                 rg = diagnostic["range"]
                 message = diagnostic["message"]
-                start_line = rg["start"]["line"]
+                start_line = rg["start"]["line"] + 1
                 start_column = rg["start"]["character"]
-                end_line = rg["end"]["line"]
+                end_line = rg["end"]["line"] + 1
                 end_column = rg["end"]["character"]
-                line_content = linecache.getline(file_path, rg["start"]["line"])
+                line_content = linecache.getline(file_path, start_line)
                 content_end_column = end_column if start_line == end_line else len(line_content)
                 diagnostics_content += "".join(["\033[93m", f'{diagnostic_counter} {message}', REFERENCE_ENDC, "\n"])
                 if start_column == end_column:
@@ -457,13 +425,13 @@ class FileAction:
         linecache.clearcache()  # clear line cache
         return diagnostics_content, diagnostic_counter
 
-    def list_workspace_diagnostics2(self, hide_severities):
-        diagnostics_content, diagnostics_counter = self.get_workspace_diagnostics2(hide_severities)
+    def list_workspace_diagnostics(self, hide_severities):
+        diagnostics_content, diagnostics_counter = self.get_workspace_diagnostics(hide_severities)
 
         if diagnostics_counter == 0:
             message_emacs("No diagnostics found.")
         else:
-            eval_in_emacs("lsp-bridge-diagnostic--list-workspace2", diagnostics_content, diagnostics_counter)
+            eval_in_emacs("lsp-bridge-diagnostic--list-workspace", diagnostics_content, diagnostics_counter)
 
     def sort_diagnostic(self, diagnostic_a, diagnostic_b):
         score_a = [diagnostic_a["range"]["start"]["line"],
