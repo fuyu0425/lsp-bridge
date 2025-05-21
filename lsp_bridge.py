@@ -154,6 +154,8 @@ class LspBridge:
                      "try_completion", "try_formatting",
                      "change_cursor",
                      "list_diagnostics",
+                     "list_workspace_diagnostics",
+                     "list_workspace_diagnostics2",
                      "try_code_action",
                      "workspace_symbol"] + handler_subclasses:
             self.build_file_action_function(name)

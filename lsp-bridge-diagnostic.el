@@ -392,6 +392,67 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
           (setq diagnostic-counter (1+ diagnostic-counter))))
       (lsp-bridge-ref-popup (buffer-string) diagnostic-counter))))
 
+;; hacking for workspace diagnostic
+(defun lsp-bridge-diagnostic-list-workspace ()
+  (interactive)
+  (lsp-bridge-call-file-api "list_workspace_diagnostics" lsp-bridge-diagnostic-hide-severities))
+
+(defun lsp-bridge-diagnostic--list-workspace (diagnostics)
+  (let ((current-buffer (current-buffer))
+        (diagnostic-counter 0)
+        (current-file-path))
+    (with-temp-buffer
+      (dolist (diagnostic diagnostics)
+        (let* ((filepath (plist-get diagnostic :file-path))
+               (range (plist-get diagnostic :range))
+               (message (plist-get diagnostic :message))
+               (start (plist-get range :start))
+               (end (plist-get range :end))
+               (start-line (1+ (plist-get start :line)))
+               (start-column (plist-get start :character))
+               (end-line (1+ (plist-get end :line)))
+               (end-column (plist-get end :character))
+               (line-content (with-current-buffer (get-file-buffer filepath)
+                               (save-excursion
+                                 (goto-line start-line)
+                                 (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+               (content-end-column (if (eq start-line end-line) end-column (string-width line-content))))
+          (when (or (null current-file-path)
+                     (not (string-equal current-file-path filepath)))
+            (when (> diagnostic-counter 0)
+              (insert "\n"))
+            (insert (concat "\n" "\033[95m" filepath "\033[0m" "\n")))
+          (setq current-file-path filepath)
+          (insert (concat "\033[93m" (format "%s %s" (1+ diagnostic-counter) message) "\033[0m" "\n"))
+
+          ;; `start' point and `end' point will same if the diagnostic message is for a location rather than region.
+          ;; Then we need adjust end-column to highlight diagnostic location.
+          (when (equal start-column end-column)
+            (setq end-column (1+ end-column)))
+
+          (insert (format "%s:%s:%s\n\n"
+                          start-line
+                          start-column
+                          (concat (substring line-content 0 start-column)
+                                  "\033[94m"
+                                  (substring line-content start-column content-end-column)
+                                  (let ((line-difference (- end-line start-line)))
+                                    (unless (eq line-difference 0)
+                                      (format "... (+%d line%s)" line-difference (when (> line-difference 1) "s"))))
+                                  "\033[0m"
+                                  (substring line-content content-end-column))))
+
+          (setq diagnostic-counter (1+ diagnostic-counter))))
+      (lsp-bridge-ref-popup (buffer-string) diagnostic-counter))))
+
+;; hacking for workspace diagnostic
+(defun lsp-bridge-diagnostic-list-workspace2 ()
+  (interactive)
+  (lsp-bridge-call-file-api "list_workspace_diagnostics2" lsp-bridge-diagnostic-hide-severities))
+
+(defun lsp-bridge-diagnostic--list-workspace2 (diagnostics-content diagnostics-counter)
+  (lsp-bridge-ref-popup diagnostics-content diagnostics-counter))
+
 (provide 'lsp-bridge-diagnostic)
 
 ;;; lsp-bridge-diagnostic.el ends here

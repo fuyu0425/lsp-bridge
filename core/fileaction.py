@@ -23,6 +23,7 @@ import pprint
 import threading
 import time
 from typing import TYPE_CHECKING, Dict, Tuple
+import linecache
 
 from core.handler import *
 from core.handler import Diagnostic
@@ -349,14 +350,120 @@ class FileAction:
         return diagnostics
 
     def list_diagnostics(self, hide_severities):
-        diagnostic_count = 0
-        for server_name in self.diagnostics:
-            diagnostic_count += len(self.diagnostics[server_name])
+        dianostics = self.get_diagnostics(hide_severities)
+        diagnostic_count = len(dianostics)
 
         if diagnostic_count == 0:
             message_emacs("No diagnostics found.")
         else:
-            eval_in_emacs("lsp-bridge-diagnostic--list", self.get_diagnostics(hide_severities))
+            eval_in_emacs("lsp-bridge-diagnostic--list", dianostics)
+
+    def get_workspace_diagnostics(self, hide_severities=None):
+        diagnostics = []
+        diagnostic_count = 0
+        # either single_server or multi_servers
+        if self.single_server:
+            for file_path, fa in self.single_server.files.items():
+                fa_diagnostics = fa.diagnostics;
+                for server_name in fa_diagnostics:
+                    for diagnostic in fa_diagnostics[server_name]:
+                        if hide_severities and diagnostic["severity"] in hide_severities:
+                            continue
+                        diagnostic["server-name"] = server_name
+                        diagnostic["file-path"] = file_path
+                        diagnostics.append(diagnostic)
+
+                        diagnostic_count += 1
+
+                        if diagnostic_count >= self.diagnostics_max_number:
+                            return diagnostics
+        elif self.multi_servers:
+            # TODO: use python for checking
+            pass
+
+        return diagnostics
+
+    def list_workspace_diagnostics(self, hide_severities):
+        dianostics = self.get_workspace_diagnostics(hide_severities)
+        diagnostic_count = len(dianostics)
+
+        if diagnostic_count == 0:
+            message_emacs("No diagnostics found.")
+        else:
+            eval_in_emacs("lsp-bridge-diagnostic--list-workspace", dianostics)
+
+    def get_workspace_diagnostics2(self, hide_severities=None):
+        diagnostics = []
+        diagnostic_counter = 0
+        diagnostics_content = ""
+        diagnostics_dict = {}
+        # # make sure the current file goes top
+        diagnostics_dict[self.filepath] = []
+        # either single_server or multi_servers
+        if self.single_server:
+            for file_path, fa in self.single_server.files.items():
+                fa_diagnostics = fa.diagnostics;
+                if file_path not in diagnostics_dict:
+                    diagnostics_dict[file_path] = []
+                for server_name in fa_diagnostics:
+                    for diagnostic in fa_diagnostics[server_name]:
+                        if hide_severities and diagnostic["severity"] in hide_severities:
+                            continue
+                        diagnostic["server-name"] = server_name
+                        diagnostic["file-path"] = file_path
+
+                        diagnostics_dict[file_path].append(diagnostic)
+
+                        diagnostic_counter += 1
+
+                        if diagnostic_counter >= self.diagnostics_max_number:
+                            return diagnostics
+        elif self.multi_servers:
+            # TODO: use python for checking
+            pass
+
+        REFERENCE_PATH = '\033[95m'
+        REFERENCE_TEXT = '\033[94m'
+        REFERENCE_ENDC = '\033[0m'
+        diagnostic_counter = 0 # reset for counting
+        for file_path, diagnostics in diagnostics_dict.items():
+            if len(diagnostics) > 0:
+                diagnostics_content += "".join(["\n", REFERENCE_PATH, file_path, REFERENCE_ENDC, "\n"])
+            for diagnostic in diagnostics:
+                diagnostic_counter +=1
+                rg = diagnostic["range"]
+                message = diagnostic["message"]
+                start_line = rg["start"]["line"]
+                start_column = rg["start"]["character"]
+                end_line = rg["end"]["line"]
+                end_column = rg["end"]["character"]
+                line_content = linecache.getline(file_path, rg["start"]["line"])
+                content_end_column = end_column if start_line == end_line else len(line_content)
+                diagnostics_content += "".join(["\033[93m", f'{diagnostic_counter} {message}', REFERENCE_ENDC, "\n"])
+                if start_column == end_column:
+                    end_column +=1
+                line_difference = end_line - start_line
+                diagnostics_content += "{}:{}:{}\n\n".format(
+                    start_line,
+                    start_column,
+                    "".join([line_content[:start_column],
+                             REFERENCE_TEXT,
+                             line_content[start_column:content_end_column],
+                             "... (+%d line%s)".format(line_difference, "s" if line_difference > 1 else "") if line_difference > 0 else "",
+                             REFERENCE_ENDC,
+                             line_content[end_column:]])
+                    )
+
+        linecache.clearcache()  # clear line cache
+        return diagnostics_content, diagnostic_counter
+
+    def list_workspace_diagnostics2(self, hide_severities):
+        diagnostics_content, diagnostics_counter = self.get_workspace_diagnostics2(hide_severities)
+
+        if diagnostics_counter == 0:
+            message_emacs("No diagnostics found.")
+        else:
+            eval_in_emacs("lsp-bridge-diagnostic--list-workspace2", diagnostics_content, diagnostics_counter)
 
     def sort_diagnostic(self, diagnostic_a, diagnostic_b):
         score_a = [diagnostic_a["range"]["start"]["line"],
@@ -461,6 +568,14 @@ class FileAction:
     def save_file(self, buffer_name):
         for lsp_server in self.get_lsp_servers():
             lsp_server.send_did_save_notification(self.filepath, buffer_name)
+
+    def focus_file(self):
+        for lsp_server in self.get_lsp_servers():
+            lsp_server.send_did_focus_notification(self.filepath)
+        # for lsp_server in self.get_lsp_servers():
+        #     lsp_server.send_did_open_notification(self)
+        for lsp_server in self.get_lsp_servers():
+            lsp_server.send_did_save_notification(self.filepath)
 
     def completion_item_resolve(self, item_key, server_name):
         if server_name in self.completion_items:
