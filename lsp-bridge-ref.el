@@ -251,6 +251,8 @@ used to restore window configuration after apply changed.")
 
     (define-key map (kbd "D") 'lsp-bridge-ref-remove-line-from-results)
 
+    (define-key map (kbd "r") 'lsp-bridge-ref-reload)
+
     (define-key map (kbd "q") 'lsp-bridge-ref-quit)
     map)
   "Keymap used by `lsp-bridge-ref-mode'.")
@@ -357,9 +359,10 @@ used to restore window configuration after apply changed.")
   "Stores parameters of last search.
 Becomes buffer local in `lsp-bridge-ref-mode' buffers.")
 
+(defvar-local lsp-bridge-ref-buffer-usage nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Utils functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun lsp-bridge-ref-popup (references-content references-counter)
+(defun lsp-bridge-ref-popup (references-content references-counter &optional usage)
   "Rerun rg with customized arguments. This function will give
 user more freedom to use rg with special arguments."
   ;; Save window configuration before do search.
@@ -393,6 +396,7 @@ user more freedom to use rg with special arguments."
 
   ;; Run search command.
   (with-current-buffer lsp-bridge-ref-buffer
+    (setq-local lsp-bridge-ref-buffer-usage usage) ;; usage: ref or diagnostic
     (insert references-content)
 
     ;; Highlight file path.
@@ -1082,6 +1086,20 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
     ;; Message to user.
     (message (format "[LSP-Bridge] Apply %s lines" (length lsp-bridge-ref-changed-lines))))
   (lsp-bridge-ref-switch-to-view-mode))
+
+(defun lsp-bridge-ref-reload ()
+  (interactive)
+  (save-excursion
+    (with-current-buffer lsp-bridge-ref-buffer
+      (cond
+       ((string-equal lsp-bridge-ref-buffer-usage "diagnostics")
+        (lsp-bridge-ref-quit)
+        (lsp-bridge-diagnostic-list))
+       ((string-equal lsp-bridge-ref-buffer-usage "diagnostics-workspace")
+        (lsp-bridge-ref-quit)
+        (lsp-bridge-diagnostic-list-workspace))
+       (t (message "[LSP-Bridge] Reload not support in this mode."))
+       ))))
 
 (provide 'lsp-bridge-ref)
 
