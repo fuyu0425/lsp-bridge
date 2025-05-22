@@ -36,7 +36,7 @@ class FindReferences(Handler):
             references_content = ""
             remote_connection_info = get_remote_connection_info()
             for i, (path, ranges) in enumerate(references_dict.items()):
-                references_content += "".join(["\n", REFERENCE_PATH, remote_connection_info, path, REFERENCE_ENDC, "\n"])
+                references_content += "".join(["\n" if references_counter else "" , REFERENCE_PATH, remote_connection_info, path, REFERENCE_ENDC, "\n"])
 
                 for rg in ranges:
                     line = rg["start"]["line"]
