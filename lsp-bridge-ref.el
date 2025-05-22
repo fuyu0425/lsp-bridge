@@ -252,6 +252,7 @@ used to restore window configuration after apply changed.")
     (define-key map (kbd "D") 'lsp-bridge-ref-remove-line-from-results)
 
     (define-key map (kbd "r") 'lsp-bridge-ref-reload)
+    (define-key map (kbd "z") 'lsp-bridge-ref-code-action)
 
     (define-key map (kbd "q") 'lsp-bridge-ref-quit)
     map)
@@ -1100,6 +1101,18 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
         (lsp-bridge-diagnostic-list-workspace))
        (t (message "[LSP-Bridge] Reload not support in this mode."))
        ))))
+
+(defun lsp-bridge-ref-code-action ()
+  (interactive)
+  (let* ()
+    (save-window-excursion
+      (lsp-bridge-ref-open-file)
+      (if (and lsp-bridge-ref-open-file-in-request-window
+               ;; check if the window which requested search has beed deleted.
+               (window-valid-p lsp-bridge-ref-request-search-window))
+          (select-window lsp-bridge-ref-request-search-window)
+        (other-window 1))
+      (lsp-bridge-code-action))))
 
 (provide 'lsp-bridge-ref)
 
