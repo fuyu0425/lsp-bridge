@@ -2095,14 +2095,23 @@ The line number is relative to the beginning of the source block."
       ;; Otherwise, other completion backend won't show up.
       (setq-local acm-backend-path-items nil))))
 
+(defun lsp-bridge-treesit-get-filepath ()
+    (and (string-equal (treesit-node-type (treesit-node-at (point))) "path") ;; for latex
+         (treesit-node-text (treesit-node-at (point)))))
+
 (defun lsp-bridge-elisp-get-filepath ()
   " Supports obtaining paths with spaces "
   (let* ((file-end (point))
          (filepath (save-excursion
                      (catch 'break
                        (let* ((file-path "")
+                              (treesit-file-path)
                               (file-beg 0))
                          (while (acm-in-string-p)
+                           (setq treesit-file-path (lsp-bridge-treesit-get-filepath))
+                           (when (and treesit-file-path (file-name-directory treesit-file-path) (file-exists-p (file-name-directory treesit-file-path)))
+                               (progn
+                                 (throw 'break treesit-file-path)))
                            (setq file-beg (car (bounds-of-thing-at-point 'filename)))
                            (if file-beg
                                (progn

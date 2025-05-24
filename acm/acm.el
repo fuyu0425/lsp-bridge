@@ -1316,7 +1316,8 @@ The key of candidate will change between two LSP results."
       ;; `beginning-of-defun' is very expensive function will slow down completion menu.
       ;; We use `treesit-node-type' directly if treesit is enable.
       (or (eq (get-text-property (point) 'face) 'font-lock-string-face)
-          (string-equal (treesit-node-type (treesit-node-at (point))) "string"))
+          (string-equal (treesit-node-type (treesit-node-at (point))) "string")
+          (string-equal (treesit-node-type (treesit-node-at (point))) "path"))
     (ignore-errors
       (unless (or (bobp) (eobp))
         (save-excursion
