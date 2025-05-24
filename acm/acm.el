@@ -488,6 +488,7 @@ Only calculate template candidate when type last character."
          tabnine-candidates
          codeium-candidates
          copilot-candidates
+         sdcv-candidates
          jupyter-candidates
          tabby-candidates
          tempel-candidates
@@ -522,9 +523,10 @@ Only calculate template candidate when type last character."
     (when acm-enable-capf
       (setq capf-candidates (acm-backend-capf-candiates keyword)))
 
-    (if acm-enable-search-sdcv-words
+    ;; NOTE: changed to co-op with other backend. 
+    (when acm-enable-search-sdcv-words
         ;; Completion SDCV if option `acm-enable-search-sdcv-words' is enable.
-        (setq candidates (acm-backend-search-sdcv-words-candidates keyword))
+        (setq sdcv-candidates (acm-backend-search-sdcv-words-candidates keyword)))
 
       (setq path-candidates (acm-backend-path-candidates keyword))
       (if (> (length path-candidates) 0)
@@ -622,11 +624,12 @@ Only calculate template candidate when type last character."
                                                      ("tabnine-candidates" tabnine-candidates)
                                                      ("codeium-candidates" codeium-candidates)
                                                      ("copilot-candidates" copilot-candidates)
+                                                     ("sdcv-candidates" sdcv-candidates)
                                                      ("template-second-part-candidates" template-second-part-candidates)
                                                      ("mode-second-part-candidates" mode-second-part-candidates)
                                                      ))
                                                  acm-backend-order))
-              )))
+              ))
 
     ;; Return candidates.
     (if acm-filter-overlay
