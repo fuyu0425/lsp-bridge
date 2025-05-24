@@ -390,7 +390,7 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
                                   (substring line-content content-end-column))))
 
           (setq diagnostic-counter (1+ diagnostic-counter))))
-      (lsp-bridge-ref-popup (buffer-string) diagnostic-counter))))
+      (lsp-bridge-ref-popup (buffer-string) diagnostic-counter "diagnostics"))))
 
 ;; hacking for workspace diagnostic
 (defun lsp-bridge-diagnostic-list-workspace ()
@@ -398,7 +398,7 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
   (lsp-bridge-call-file-api "list_workspace_diagnostics" lsp-bridge-diagnostic-hide-severities))
 
 (defun lsp-bridge-diagnostic--list-workspace (diagnostics-content diagnostics-counter)
-  (lsp-bridge-ref-popup diagnostics-content diagnostics-counter))
+  (lsp-bridge-ref-popup diagnostics-content diagnostics-counter "diagnostics-workspace"))
 
 (provide 'lsp-bridge-diagnostic)
 
