@@ -1319,7 +1319,7 @@ So we build this macro to restore postion after code format."
   ;; Restart lsp-bridge process.
   (lsp-bridge-kill-process)
   (lsp-bridge-start-process)
-
+  ;; (lsp-bridge-call-file-api "change_cursor" (lsp-bridge--position))
   ;; Try restore lsp-bridge log buffer after restart.
   (when lsp-bridge-log-buffer-window
     (save-excursion
@@ -1402,6 +1402,10 @@ So we build this macro to restore postion after code format."
     (setq lsp-bridge-epc-process nil)
     (message "[LSP-Bridge] Process terminated.")))
 
+(defun lsp-bridge--trigger-update ()
+  (interactive)
+  (lsp-bridge-call-file-api "change_cursor" (lsp-bridge--position)))
+
 (defun lsp-bridge--first-start (lsp-bridge-epc-port)
   "Call `lsp-bridge--open-internal' upon receiving `start_finish' signal from server."
   ;; Make EPC process.
@@ -1418,7 +1422,11 @@ So we build this macro to restore postion after code format."
   (lsp-bridge-search-words-index-files)
 
   ;; Synchronize elisp symbol to Python side.
-  (lsp-bridge-elisp-symbols-update))
+  (lsp-bridge-elisp-symbols-update)
+
+  ;; trigger initialization for restart
+  (lsp-bridge--trigger-update)
+  )
 
 (defvar-local lsp-bridge-last-cursor-position 0)
 (defvar-local lsp-bridge-prohibit-completion nil)
