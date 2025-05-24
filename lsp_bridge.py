@@ -685,6 +685,10 @@ class LspBridge:
 
         if os.path.splitext(filepath)[-1] == '.org':
             single_lang_server = get_emacs_func_result("get-single-lang-server", project_path, filepath)
+            if not single_lang_server:
+                self.turn_off(filepath) # FIMXE
+                return
+            # print(filepath, single_lang_server)
             lang_server_info = load_single_server_info(single_lang_server)
             #TODO support diagnostic
             lsp_server = self.create_lsp_server(filepath, project_path, lang_server_info, enable_diagnostics=False)
@@ -767,7 +771,8 @@ class LspBridge:
         single_lang_server = get_emacs_func_result("get-single-lang-server", project_path, filepath)
 
         if not single_lang_server:
-            self.turn_off(filepath, "ERROR: can't find the corresponding server for {}".format(filepath))
+            # self.turn_off(filepath, "ERROR: can't find the corresponding server for {}".format(filepath))
+            self.turn_off(filepath) # FIMXE
 
             return False
 
@@ -821,9 +826,10 @@ class LspBridge:
 
         return None
 
-    def turn_off(self, filepath, message):
+    def turn_off(self, filepath, message=''):
         if os.path.splitext(filepath)[1] != ".txt":
-            message_emacs(message + ", disable LSP feature.")
+            if len(message) > 0:
+                message_emacs(message + ", disable LSP feature.")
             eval_in_emacs("lsp-bridge--turn-off-lsp-feature", filepath, get_lsp_file_host())
 
     def turn_off_by_single_file(self, filepath, single_lang_server):
