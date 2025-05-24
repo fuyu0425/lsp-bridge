@@ -746,6 +746,8 @@ class LspServer:
         else:
             if "method" in message:
                 # server notification
+                if message["method"] == "$/progress":
+                    return
                 log_time("Recv {} notification from '{}' for project {}".format(message["method"], self.server_info["name"], self.project_name))
             else:
                 # others
