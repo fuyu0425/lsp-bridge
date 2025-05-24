@@ -52,7 +52,7 @@ class Hover(Handler):
                             render_strings.append(item)
                         else:
                             self.parse_hover_contents(item, render_strings)
-        return "\n".join(render_strings)
+        return "\n".join(map(lambda s: s.strip(), render_strings))
 
     def process_response(self, response: dict) -> None:
         if response is None or "contents" not in response or len(response["contents"]) == 0:
