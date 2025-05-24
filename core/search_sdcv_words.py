@@ -106,9 +106,32 @@ class SearchSdcvWords:
         else:
             return cmp(word_a["key"], word_b["key"])
 
+    # sort by length first
+    def sort_words_len(self, prefix, word_a, word_b):
+        word_a_starts_with_prefix = word_a["key"].startswith(prefix)
+        word_b_starts_with_prefix = word_b["key"].startswith(prefix)
+        len_word_a = len(word_a["key"])
+        len_word_b = len(word_b["key"])
+
+        if word_a_starts_with_prefix and word_b_starts_with_prefix:
+            if len_word_a == len_word_b:
+                return cmp(word_a["key"], word_b["key"])
+            else:
+                return cmp(len_word_a, len_word_b)
+        elif word_a_starts_with_prefix:
+            return -1
+        elif word_b_starts_with_prefix:
+            return 1
+        else:
+            if len_word_a == len_word_b:
+                return cmp(word_a["key"], word_b["key"])
+            else:
+                return cmp(len_word_a, len_word_b)
+
     def search_words(self, prefix: str, ticker: int):
         candidates = []
-        
+        fuzzy_candidates = []
+
         prefix_regexp = re.compile(r".*".join(prefix))
         if len(prefix.lower()) > 3 and prefix.lower() in self.pinyin:
             for word, translation in self.pinyin[prefix.lower()].items():
@@ -125,6 +148,8 @@ class SearchSdcvWords:
                     break
 
         for word, translation in self.words.items():
+            # if prefix.lower() == word or word.startswith(prefix.lower()) or prefix_regexp.match(word):
+            # make sure prefix-matched word is added before fuzzy matched candidates
             if prefix.lower() == word or word.startswith(prefix.lower()) or prefix_regexp.match(word):
                 candidate = {
                     "key": word,
@@ -134,11 +159,18 @@ class SearchSdcvWords:
                     "annotation": translation,
                     "backend": "search-sdcv-words"
                 }
-                candidates.append(candidate)
-                    
+                if prefix.lower() == word or word.startswith(prefix.lower()):
+                    candidates.append(candidate)
+                else:
+                    fuzzy_candidates.append(candidate)
                 if len(candidates) > self.search_max_number:
                     break
-                
+        # fill with fuzzy candidates
+        if len(candidates) < self.search_max_number:
+            candidates += fuzzy_candidates[:self.search_max_number - len(candidates)]
+
         if ticker == self.search_ticker:
+            # eval_in_emacs("lsp-bridge-search-backend--record-items", "search-sdcv-words",
+            #               sorted(candidates, key=functools.cmp_to_key(lambda a, b: self.sort_words(prefix, a, b))))
             eval_in_emacs("lsp-bridge-search-backend--record-items", "search-sdcv-words",
-                          sorted(candidates, key=functools.cmp_to_key(lambda a, b: self.sort_words(prefix, a, b))))
+                          sorted(candidates, key=functools.cmp_to_key(lambda a, b: self.sort_words_len(prefix, a, b))))
