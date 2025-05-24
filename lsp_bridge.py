@@ -153,6 +153,8 @@ class LspBridge:
         for name in ["change_file", "update_file",  "save_file",
                      "try_completion", "try_formatting",
                      "change_cursor",
+                     "list_project_buffer_files",
+                     "open_project_buffer_files",
                      "list_diagnostics",
                      "list_workspace_diagnostics",
                      "try_code_action",
@@ -660,6 +662,9 @@ class LspBridge:
                 message = self.message_queue.get(True)
                 if message["name"] == "server_process_exit":
                     self.handle_server_process_exit(message["content"])
+                elif message["name"] == "open_file":
+                    # print("open_file", message["content"])
+                    self.open_file(message["content"])
                 else:
                     logger.error("Unhandled lsp-bridge message: %s" % message)
 

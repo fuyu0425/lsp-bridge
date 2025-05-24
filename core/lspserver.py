@@ -342,6 +342,8 @@ class LspServer:
 
         self.files: Dict[str, "FileAction"] = dict()
 
+        self.has_added_project_files = False
+
     def attach(self, fa: "FileAction"):
         if is_in_path_dict(self.files, fa.filepath):
             logger.error(f"File {fa.filepath} opened again before close.")
@@ -1009,6 +1011,22 @@ class LspServer:
         files = list(filter(lambda path: os.path.exists(os.path.dirname(path)), paths))
 
         return files
+
+    def open_project_files(self, files):
+        # Don't add twice
+        if self.has_added_project_files:
+            return
+        for filepath in files:
+            self.open_file(filepath)
+
+    def open_file(self, filepath):
+        if is_in_path_dict(self.files, filepath):
+            return
+
+        self.message_queue.put({
+            "name": "open_file",
+            "content": filepath
+        })
 
     def close_file(self, filepath):
         # Send didClose notification when client close file.

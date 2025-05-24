@@ -130,6 +130,9 @@ def get_buffer_content(filename, buffer_name):
     else:
         return get_emacs_func_result('get-buffer-content', buffer_name)
 
+def get_buffer_file_list():
+    return get_emacs_func_result('get-buffer-file-list')
+
 def get_file_content_from_file_server(filename):
     global lsp_bridge_server
 

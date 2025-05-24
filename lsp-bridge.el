@@ -1118,6 +1118,13 @@ So we build this macro to restore postion after code format."
       (with-current-buffer buf
         (buffer-substring-no-properties (point-min) (point-max))))))
 
+(defun lsp-bridge--get-buffer-file-list-func ()
+  "Get buffer content for lsp. BUFFER-NAME is name eval from (buffer-name)."
+  (delq nil (mapcar (lambda (buffer)
+                      (with-current-buffer buffer
+                        (buffer-file-name)))
+                    (buffer-list))))
+
 (defun lsp-bridge--get-current-line-func ()
   (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
 
@@ -1482,6 +1489,43 @@ So we build this macro to restore postion after code format."
 
       ;; Try send inlay hint if window scroll.
       (lsp-bridge-inlay-hint-monitor-window-scroll))))
+
+;; NOTE: local only now
+(defun lsp-bridge-file-has-lsp-server-p (filename)
+  (let* ((multi-lang-server-name (or (lsp-bridge-get-multi-lang-server-by-extension filename)
+                                     (lsp-bridge-get-multi-lang-server-by-file-mode filename)))
+         (lang-server-by-name (or (lsp-bridge-get-single-lang-server-by-extension filename)
+                                  (lsp-bridge-get-single-lang-server-by-file-mode filename))))
+    (if multi-lang-server-name
+        multi-lang-server-name
+      lang-server-by-name)))
+
+(defun lsp-bridge-open-file (filename)
+  (message "try open-file: %s" filename)
+  (let* ((filename (lsp-bridge-get-buffer-truename filename)))
+    (when (lsp-bridge-file-has-lsp-server-p filename)
+      (message "actual open-file: %s" filename)
+      (lsp-bridge-call-async "change_cursor" filename 0))))
+
+(defun lsp-bridge-open-files (files)
+  (mapcar #'lsp-bridge-open-file files))
+
+(defun lsp-bridge-open-project-files (&optional project)
+  (interactive)
+  ;; TODO: support other project system.
+  ;; TODO: auto open limit; Sort by recently opened.
+  (let* ((project-buffers (projectile-project-buffers project))
+         (project-buffer-files (cl-remove-if #'null
+                                             (mapcar #'buffer-file-name project-buffers))))
+    (lsp-bridge-open-files project-buffer-files)))
+
+(defun lsp-bridge-test-list-project ()
+  (interactive)
+  (lsp-bridge-call-file-api "list_project_buffer_files"))
+
+(defun lsp-bridge-test-open-project ()
+  (interactive)
+  (lsp-bridge-call-file-api "open_project_buffer_files"))
 
 (defun lsp-bridge-close-buffer-file ()
   (if (lsp-bridge-is-remote-file)

@@ -44,6 +44,9 @@ def create_file_action_with_single_server(filepath, single_server_info, single_s
     return action
 
 def create_file_action_with_multi_servers(filepath, multi_servers_info, multi_servers, external_file_link=None):
+    if is_in_path_dict(FILE_ACTION_DICT, filepath):
+        # TODO: warn?
+        return
     action = FileAction(filepath, None, None, multi_servers_info, multi_servers, external_file_link)
     add_to_path_dict(FILE_ACTION_DICT, filepath, action)
     return action
@@ -119,6 +122,7 @@ class FileAction:
         self.insert_spaces = not self.insert_spaces
 
         self.set_lsp_server()
+        self.open_project_buffer_files()
 
     def set_lsp_server(self):
         """Set LSP handlers, prefix and name """
@@ -349,6 +353,44 @@ class FileAction:
 
         return diagnostics
 
+    def list_project_buffer_files(self):
+        """
+        List all files with emacs buffer in current project.
+        Another way is to use `git ls-files`.
+        """
+        project_buffer_files = []
+        lsp_servers = self.get_lsp_servers()
+        if len(lsp_servers) == 0:
+            return
+        lsp_server = lsp_servers[0] # anyone works
+        project_path = lsp_server.project_path
+        buffer_file_list = get_buffer_file_list() # full paths
+        for buffer_file in buffer_file_list:
+            if os.path.exists(buffer_file):
+                if os.path.commonpath([buffer_file, project_path]) == project_path:
+                    project_buffer_files.append(buffer_file)
+        # print(project_buffer_files) # FIXME: remove
+        return project_buffer_files
+
+    def open_project_buffer_files(self, force=False):
+        lsp_servers = self.get_lsp_servers()
+        if len(lsp_servers) == 0:
+            return
+        to_add = False
+        for lsp_server in lsp_servers:
+            to_add = force or not lsp_server.has_added_project_files
+
+        if not to_add:
+            return
+
+        project_buffer_files = self.list_project_buffer_files()
+        if len(project_buffer_files) == 0: # FIXME: remove
+            message_emacs("No project buffer files found.")
+        lsp_server = lsp_servers[0] # anyone works
+        lsp_server.open_project_files(project_buffer_files)
+        for lsp_server in lsp_servers:
+            lsp_server.has_added_project_files = True
+
     def list_diagnostics(self, hide_severities):
         dianostics = self.get_diagnostics(hide_severities)
         diagnostic_count = len(dianostics)
@@ -363,30 +405,32 @@ class FileAction:
         diagnostic_counter = 0
         diagnostics_content = ""
         diagnostics_dict = {}
-        # # make sure the current file goes top
+        # make sure the current file goes top
         diagnostics_dict[self.filepath] = []
-        # either single_server or multi_servers
-        if self.single_server:
-            for file_path, fa in self.single_server.files.items():
-                fa_diagnostics = fa.diagnostics;
-                if file_path not in diagnostics_dict:
-                    diagnostics_dict[file_path] = []
-                for server_name in fa_diagnostics:
-                    for diagnostic in fa_diagnostics[server_name]:
-                        if hide_severities and diagnostic["severity"] in hide_severities:
-                            continue
-                        diagnostic["server-name"] = server_name
-                        diagnostic["file-path"] = file_path
 
-                        diagnostics_dict[file_path].append(diagnostic)
+        def server_diagnostics(lsp_servers):
+            nonlocal diagnostic_counter
+            for lsp_server in lsp_servers:
+                for file_path, fa in lsp_server.files.items():
+                    fa_diagnostics = fa.diagnostics;
+                    if file_path not in diagnostics_dict:
+                        diagnostics_dict[file_path] = []
+                    for server_name in fa_diagnostics:
+                        for diagnostic in fa_diagnostics[server_name]:
+                            if hide_severities and diagnostic["severity"] in hide_severities:
+                                continue
+                            diagnostic["server-name"] = server_name
+                            diagnostic["file-path"] = file_path
 
-                        diagnostic_counter += 1
+                            diagnostics_dict[file_path].append(diagnostic)
 
-                        if diagnostic_counter >= self.diagnostics_max_number:
-                            return diagnostics
-        elif self.multi_servers:
-            # TODO: use python for checking
-            pass
+                            diagnostic_counter += 1
+                            if diagnostic_counter >= self.diagnostics_max_number:
+                                return
+
+        # handle both single server and multi servers
+        server_diagnostics(self.get_lsp_servers())
+
 
         REFERENCE_PATH = '\033[95m'
         REFERENCE_TEXT = '\033[94m'
@@ -622,7 +666,7 @@ class FileAction:
         remove_from_path_dict(FILE_ACTION_DICT, self.filepath)
 
     def get_lsp_servers(self):
-        return self.multi_servers.values() if self.multi_servers else [self.single_server]
+        return list(self.multi_servers.values()) if self.multi_servers else [self.single_server]
 
     def get_lsp_server_names(self):
         return list(map(lambda lsp_server: lsp_server.server_info["name"], self.get_lsp_servers()))
