@@ -407,7 +407,7 @@ class FileAction:
         diagnostics_dict = {}
         # make sure the current file goes top
         diagnostics_dict[self.filepath] = []
-
+        server_names = set()
         def server_diagnostics(lsp_servers):
             nonlocal diagnostic_counter
             for lsp_server in lsp_servers:
@@ -419,6 +419,7 @@ class FileAction:
                         for diagnostic in fa_diagnostics[server_name]:
                             if hide_severities and diagnostic["severity"] in hide_severities:
                                 continue
+                            server_names.add(server_name)
                             diagnostic["server-name"] = server_name
                             diagnostic["file-path"] = file_path
 
@@ -431,6 +432,7 @@ class FileAction:
         # handle both single server and multi servers
         server_diagnostics(self.get_lsp_servers())
 
+        has_multiple_server_diagnostics = len(server_names) > 1
 
         REFERENCE_PATH = '\033[95m'
         REFERENCE_TEXT = '\033[94m'
@@ -443,6 +445,7 @@ class FileAction:
                 diagnostics_content += "".join([REFERENCE_PATH, file_path, REFERENCE_ENDC, "\n"])
             for diagnostic in diagnostics:
                 diagnostic_counter +=1
+                server_name = diagnostic['server-name']
                 rg = diagnostic["range"]
                 message = diagnostic["message"]
                 start_line = rg["start"]["line"] + 1
@@ -451,7 +454,10 @@ class FileAction:
                 end_column = rg["end"]["character"]
                 line_content = linecache.getline(file_path, start_line)
                 content_end_column = end_column if start_line == end_line else len(line_content)
-                diagnostics_content += "".join(["\033[93m", f'{diagnostic_counter} {message}', REFERENCE_ENDC, "\n"])
+                if has_multiple_server_diagnostics:
+                    diagnostics_content += "".join(["\033[93m", f'{diagnostic_counter} {message} ({server_name})', REFERENCE_ENDC, "\n"])
+                else:
+                    diagnostics_content += "".join(["\033[93m", f'{diagnostic_counter} {message}', REFERENCE_ENDC, "\n"])
                 if start_column == end_column:
                     end_column +=1
                 line_difference = end_line - start_line
