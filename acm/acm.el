@@ -891,6 +891,7 @@ The key of candidate will change between two LSP results."
          (annotation-not-exits (cl-every (lambda (item) (string-empty-p (plist-get item :annotation))) items)))
     (dolist (v items)
       (let* ((icon (cdr (assoc (downcase (plist-get v :icon)) acm-icon-alist)))
+             (icon-nerd (acm-nerd-icons--get-by-kind (downcase (plist-get v :icon))))
              (icon-default (cdr (assoc t acm-icon-alist)))
              (display-icon (or icon icon-default))
              (candidate (plist-get v :displayLabel))
@@ -910,8 +911,10 @@ The key of candidate will change between two LSP results."
         (setq candidate-line
               (concat
                ;; Icon.
-               (if acm-enable-icon
-                   icon-text   ; render icon if `acm-enable-icon' is t
+               (if acm-enable-icon ; render icon if `acm-enable-icon' is t or in terminal
+                   (if (or acm-icon-enable-nerd-icon (not (display-graphic-p)))
+                       (concat icon-nerd " ")
+                     icon-text)
                  " ")   ; add left padding if `acm-enable-icon' is nil
                ;; Index.
                (when acm-enable-quick-access

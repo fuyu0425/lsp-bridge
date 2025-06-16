@@ -176,6 +176,31 @@
 (defvar acm-icon-dir (expand-file-name "icons" (file-name-directory load-file-name)))
 (defvar acm-icon-width 4)
 
+;; FIXME: GUI too
+(defvar acm-icon-nerd-alist
+  '(("Function" . " 󰡱 ")
+    ("Keyword" . "  ")
+    ("Special Form" . "  ")
+    ("Module" . "  ")
+    ("Method" . "  ")
+    ("Struct" . "  ")
+    ("Snippet" . "  ")
+    ("Text" . "  ")
+    ("Variable" . " 󰫧 ")
+    ("Class" . "  ")
+    ("Custom" . "  ")
+    ("Feature" . " 󰯺 ")
+    ("Macro" . " 󰰏 ")
+    ("Interface" . "  ")
+    ("Constant" . "  ")
+    ("Field" . "  "))
+  "Annotation icons with nerd-font.")
+
+(defcustom acm-icon-enable-nerd-icon t
+  "Enable nerd icon display instead of svg, default false."
+  :type 'boolean
+  :group 'acm-icon)
+
 (defun acm-icon-filepath (collection name)
   (concat (file-name-as-directory acm-icon-dir) (format "%s_%s.svg" collection name)))
 
@@ -247,6 +272,81 @@ If COLOR-NAME is unknown to Emacs, then return COLOR-NAME as-is."
           (puthash icon-key icon-text acm-icon-cache))
         icon-text)
     ""))
+
+;; NOTE: modified from nerd-icons-corfu.el
+(defcustom acm-nerd-icons-mapping
+  '((array :style "cod" :icon "symbol_array" :face font-lock-type-face)
+    (boolean :style "cod" :icon "symbol_boolean" :face font-lock-builtin-face)
+    (class :style "cod" :icon "symbol_class" :face font-lock-type-face)
+    (color :style "cod" :icon "symbol_color" :face success)
+    (command :style "cod" :icon "terminal" :face default)
+    (constant :style "cod" :icon "symbol_constant" :face font-lock-constant-face)
+    (constructor :style "cod" :icon "triangle_right" :face font-lock-function-name-face)
+    (enummember :style "cod" :icon "symbol_enum_member" :face font-lock-builtin-face)
+    (enum-member :style "cod" :icon "symbol_enum_member" :face font-lock-builtin-face)
+    (enum :style "cod" :icon "symbol_enum" :face font-lock-builtin-face)
+    (event :style "cod" :icon "symbol_event" :face font-lock-warning-face)
+    (field :style "cod" :icon "symbol_field" :face font-lock-variable-name-face)
+    (file :fn nerd-icons-icon-for-file :face font-lock-string-face)
+    (folder :fn nerd-icons-icon-for-dir :face font-lock-string-face)
+    (interface :style "cod" :icon "symbol_interface" :face font-lock-type-face)
+    (keyword :style "cod" :icon "symbol_keyword" :face font-lock-keyword-face)
+    (macro :style "cod" :icon "symbol_misc" :face font-lock-keyword-face)
+    (magic :style "cod" :icon "wand" :face font-lock-builtin-face)
+    (method :style "cod" :icon "symbol_method" :face font-lock-function-name-face)
+    (function :style "cod" :icon "symbol_method" :face font-lock-function-name-face)
+    (module :style "cod" :icon "file_submodule" :face font-lock-preprocessor-face)
+    (numeric :style "cod" :icon "symbol_numeric" :face font-lock-builtin-face)
+    (operator :style "cod" :icon "symbol_operator" :face font-lock-comment-delimiter-face)
+    (param :style "cod" :icon "symbol_parameter" :face default)
+    (property :style "cod" :icon "symbol_property" :face font-lock-variable-name-face)
+    (reference :style "cod" :icon "references" :face font-lock-variable-name-face)
+    (snippet :style "cod" :icon "symbol_snippet" :face font-lock-string-face)
+    (string :style "cod" :icon "symbol_string" :face font-lock-string-face)
+    (struct :style "cod" :icon "symbol_structure" :face font-lock-variable-name-face)
+    (text :style "cod" :icon "text_size" :face font-lock-doc-face)
+    (typeparameter :style "cod" :icon "list_unordered" :face font-lock-type-face)
+    (type-parameter :style "cod" :icon "list_unordered" :face font-lock-type-face)
+    (unit :style "cod" :icon "symbol_ruler" :face font-lock-constant-face)
+    (value :style "cod" :icon "symbol_field" :face font-lock-builtin-face)
+    (variable :style "cod" :icon "symbol_variable" :face font-lock-variable-name-face)
+    (t :style "cod" :icon "code" :face font-lock-warning-face))
+  "Mapping of completion kinds to icons.
+
+There are two possible types for the values of this alist, static icon
+parameters or a custom function that should receive the completion candidate and
+return the icon.
+
+From here on, KIND is a symbol determining what the completion is, and comes
+from calling the `:company-kind' property of the completion. The special t
+symbol should be used for KIND to represent the default icon, and must be
+present. This applies to both element variants.
+
+In the first case, the elements should have the form (KIND :style ICON-STY :icon
+ICON-NAME [:face FACE]). ICON-STY is a string with the icon style to use, from
+those available in Nerd Fonts.  ICON-NAME is a string with the name of the icon.
+FACE, if present, is applied to the icon, mainly for its color.
+
+In case of more complex customizations that need to know the completion
+candidate itself, one can use a mapping like (KIND ICON-FN), and ICON-FN will be
+called with the candidate to return the icon."
+  :type '(alist :key-type symbol :value-type (choice nerd-icons-corfu-icon-type nerd-icons-corfu-function-type))
+  :group 'acm-icon)
+
+(defun acm-nerd-icons--get-by-kind (kind)
+  "Returns the icon glyph for kind KIND.
+
+The mapping of kind -> icon is defined by the user in
+`acm-nerd-icons-mapping'."
+  (let* ((icon-entry (or (alist-get (or kind t) acm-nerd-icons-mapping)
+                         (alist-get t acm-nerd-icons-mapping)))
+         (style (plist-get icon-entry :style))
+         (icon (plist-get icon-entry :icon))
+         (icon-fun (intern (concat "nerd-icons-" style "icon")))
+         (icon-name (concat "nf-" style "-" icon))
+         (face (plist-get icon-entry :face)))
+    (or (and (fboundp icon-fun) (funcall icon-fun icon-name :face face)) "?")))
+
 
 (provide 'acm-icon)
 
