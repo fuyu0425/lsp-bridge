@@ -226,6 +226,7 @@ used to restore window configuration after apply changed.")
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-a") 'lsp-bridge-ref-beginning-of-line)
     (define-key map (kbd "<tab>") 'lsp-bridge-ref-jump-next-keyword)
+    (define-key map (kbd "TAB") 'lsp-bridge-ref-jump-next-keyword)
     (define-key map (kbd "<backtab>") 'lsp-bridge-ref-jump-prev-keyword)
 
     (define-key map (kbd "j") 'lsp-bridge-ref-jump-next-keyword)
