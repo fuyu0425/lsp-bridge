@@ -89,7 +89,16 @@ REMOTE_FILE_ELISP_CHANNEL = 9997
 class LspBridge:
     def __init__(self, args):
         # Check running environment.
+        # TODO: get remote_server_id from command line
+        # TODO: it should be conistent with tramp
         self.running_in_server = len(args) == 0
+        self.remote_server_name = None
+        # lsp_bridge.py example.com remote
+        # remote is just used an terminator;
+        # so pgrep can discern between local/remote lsp-bridge server
+        if (len(args) == 2 and args[1] == 'remote'):
+            self.running_in_server = True
+            self.remote_server_name = args[0]
         if self.running_in_server:
             set_running_in_server()
 
@@ -226,15 +235,15 @@ class LspBridge:
               "Access files with 'lsp-bridge-open-remote-file' or 'find-file /docker:...'")
 
         # Build loop for remote files management.
-        self.file_server = FileSyncServer("0.0.0.0", REMOTE_FILE_SYNC_CHANNEL)
+        self.file_server = FileSyncServer("0.0.0.0", REMOTE_FILE_SYNC_CHANNEL, self.remote_server_name)
 
         # Build loop for call remote command from local Emacs.
         # Start waiting for init_search_backends_complete_event
-        self.file_command_server = FileCommandServer("0.0.0.0", REMOTE_FILE_COMMAND_CHANNEL, self)
+        self.file_command_server = FileCommandServer("0.0.0.0", REMOTE_FILE_COMMAND_CHANNEL, self, self.remote_server_name)
 
         # Build loop for call local Emacs function from server.
         # Signal that init_search_backends_complete_event is done
-        self.file_elisp_server = FileElispServer("0.0.0.0", REMOTE_FILE_ELISP_CHANNEL, self)
+        self.file_elisp_server = FileElispServer("0.0.0.0", REMOTE_FILE_ELISP_CHANNEL, self, self.remote_server_name)
 
         set_lsp_bridge_server(self)
 
@@ -276,6 +285,7 @@ class LspBridge:
                 ssh_conf,
                 server_port,
                 lambda message: self.receive_remote_message(message, server_port),
+                self.remote_server_name
             )
         except paramiko.AuthenticationException:
             # cloud not login server
@@ -651,6 +661,7 @@ class LspBridge:
         # Receive elisp RPC call from remote server.
         log_time(f"Receive server elisp RPC: {message}")
 
+        # FIXME: wrong if listen on 127.0.0.1 and direct-tcp bindings
         host = message["host"]
 
         # Read elisp code from local Emacs, and sendback to remote server.

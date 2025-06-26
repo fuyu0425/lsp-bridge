@@ -41,7 +41,7 @@ class ContainerConnectionException(Exception):
 class RemoteFileClient(threading.Thread):
     remote_password_dict = {}
 
-    def __init__(self, ssh_conf, server_port, callback):
+    def __init__(self, ssh_conf, server_port, callback, remote_server_name = None):
         threading.Thread.__init__(self)
 
         # Init.
@@ -50,6 +50,7 @@ class RemoteFileClient(threading.Thread):
         self.ssh_port = ssh_conf.get('port', 22)
         self.server_port = server_port
         self.callback = callback
+        self.remote_server_name = remote_server_name if remote_server_name else self.ssh_host # FIXME
         [self.remote_python_command, self.remote_python_file, self.remote_log] = get_emacs_vars(["lsp-bridge-remote-python-command", "lsp-bridge-remote-python-file", "lsp-bridge-remote-log"])
 
         [self.user_ssh_private_key,
@@ -183,15 +184,19 @@ class RemoteFileClient(threading.Thread):
         remote_python_file = self.remote_python_file
         remote_log = self.remote_log
 
+        remote_sever_name = self.remote_server_name
+
+        # TODO: set remote_server_id argument; should be name used in tramp
+
         # use -l option to bash as a login shell, ensuring that login scripts (like ~/.bash_profile) are read and executed.
         # This is useful for lsp-bridge to use environment settings to correctly find out language server command
         _, stdout, stderr = self.ssh.exec_command(
             f"""
             nohup /bin/bash -l -c '
-            pid=$(pgrep -f '\\''lsp_bridge.py$'\\'')
+            pid=$(pgrep -f '\\''lsp_bridge.py.*remote$'\\'')
             if [ "$pid" == "" ]; then
                 echo -e "Start lsp-bridge process as user $(whoami)" | tee >{remote_log}
-                {remote_python_command} {remote_python_file} >>{remote_log} 2>&1 &
+                {remote_python_command} {remote_python_file} {remote_sever_name} remote >>{remote_log} 2>&1 &
                 if [ "$?" = "0" ]; then
                     echo -e "Start lsp-bridge successfully" | tee >>{remote_log}
                 else
@@ -211,7 +216,7 @@ class RemoteFileClient(threading.Thread):
             self.ssh.exec_command(
                 f"""
                 nohup /bin/bash -l -c '
-                pid=$(pgrep -f '\\''lsp_bridge.py$'\\'')
+                pid=$(pgrep -f '\\''lsp_bridge.py.*remote$'\\'')
                 echo "try kill $pid" | tee >> {remote_log}
                 if ! [ "$pid" == "" ]; then
                     echo -e "kill lsp-bridge process as user $(whoami)" | tee >>{remote_log}
@@ -292,7 +297,7 @@ class DockerFileClient(threading.Thread):
             self.sock.close()
 
 class RemoteFileServer:
-    def __init__(self, host, port):
+    def __init__(self, host, port, remote_server_name = None):
         import socket
 
         # Init.
@@ -302,6 +307,8 @@ class RemoteFileServer:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((self.host, self.port))
         self.server.listen(5)
+
+        self.remote_server_name = remote_server_name if remote_server_name else None
 
         # Build event loop.
         self.event_loop = threading.Thread(target=self.event_dispatcher)
@@ -352,7 +359,10 @@ class RemoteFileServer:
         try:
             if self.client_socket:
                 if self.client_address:
+                    # FIXME: user remote_server_name
                     message["host"] = self.client_address[0]
+                if self.remote_server_name:
+                    message["host"] = self.remote_server_name
 
                 data = json.dumps(message)
                 self.client_socket.send(f"{data}\n".encode("utf-8"))
@@ -364,8 +374,8 @@ class RemoteFileServer:
 
 
 class FileSyncServer(RemoteFileServer):
-    def __init__(self, host, port):
-        super().__init__(host, port)
+    def __init__(self, host, port, remote_server_name = None):
+        super().__init__(host, port, remote_server_name)
         self.file_dict = {}
         self.file_locks = {}
 
@@ -465,10 +475,10 @@ class FileSyncServer(RemoteFileServer):
 
 
 class FileElispServer(RemoteFileServer):
-    def __init__(self, host, port, lsp_bridge):
+    def __init__(self, host, port, lsp_bridge, remote_server_name = None):
         self.lsp_bridge = lsp_bridge
         self.rpcs = {}
-        super().__init__(host, port)
+        super().__init__(host, port, remote_server_name)
 
     def handle_client(self):
         # remote server lsp-bridge process use this cient_socket to call elisp function from local Emacs.
@@ -509,9 +519,9 @@ class FileElispServer(RemoteFileServer):
 
 
 class FileCommandServer(RemoteFileServer):
-    def __init__(self, host, port, lsp_bridge):
+    def __init__(self, host, port, lsp_bridge, remote_server_name = None):
         self.lsp_bridge = lsp_bridge
-        super().__init__(host, port)
+        super().__init__(host, port, remote_server_name)
 
     def handle_client(self):
         # Record server host when lsp-bridge running in remote server.
