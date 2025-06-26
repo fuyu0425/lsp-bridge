@@ -107,7 +107,8 @@ class FileAction:
          self.enable_push_diagnostics,
          self.push_diagnostic_idle,
          self.display_label_max_length,
-         self.diagnostics_max_number) = get_emacs_vars([
+         self.diagnostics_max_number,
+         self.enable_open_all_project_buffers) = get_emacs_vars([
              "acm-backend-lsp-enable-auto-import",
              "acm-backend-lsp-candidates-max-number",
              "acm-backend-lsp-match-mode",
@@ -116,13 +117,15 @@ class FileAction:
              "lsp-bridge-enable-diagnostics",
              "lsp-bridge-diagnostic-fetch-idle",
              "acm-backend-lsp-candidate-max-length",
-             "lsp-bridge-diagnostic-max-number"
+             "lsp-bridge-diagnostic-max-number",
+             "lsp-bridge-enable-open-all-project-buffers"
         ])
         self.completion_block_kind_list = None
         self.insert_spaces = not self.insert_spaces
 
         self.set_lsp_server()
-        self.open_project_buffer_files()
+        if self.enable_open_all_project_buffers:
+            self.open_project_buffer_files()
 
     def set_lsp_server(self):
         """Set LSP handlers, prefix and name """

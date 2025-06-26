@@ -367,6 +367,12 @@ LSP-Bridge will enable completion inside string literals."
   :safe #'booleanp
   :group 'lsp-bridge)
 
+(defcustom lsp-bridge-enable-open-all-project-buffers nil
+  "Whether to open all project-buffers automatically."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'lsp-bridge)
+
 (defvar lsp-bridge-last-change-command nil)
 (defvar lsp-bridge-last-change-position nil)
 (defvar lsp-bridge-last-change-is-delete-command-p nil)
