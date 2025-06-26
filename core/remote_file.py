@@ -138,7 +138,8 @@ class RemoteFileClient(threading.Thread):
         :raises: :class:`paramiko.ChannelException`: if server lsp-bridge process doesn't exisit
         """
         self.chan = self.ssh.get_transport().open_channel(
-            "direct-tcpip", (self.ssh_host, self.server_port), ("0.0.0.0", 0)
+            # "direct-tcpip", (self.ssh_host, self.server_port), ("0.0.0.0", 0)
+            "direct-tcpip", ('127.0.0.1', self.server_port), ("0.0.0.0", 0)
         )
         if self.chan:
             [self.remote_heartbeat_interval] = get_emacs_vars(["lsp-bridge-remote-heartbeat-interval"])
