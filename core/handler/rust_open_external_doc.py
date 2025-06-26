@@ -3,7 +3,7 @@ from core.utils import *
 
 
 class RustOpenExternalDoc(Handler):
-    name = "rust_open_externl_doc"
+    name = "rust_open_external_doc"
     method = "experimental/externalDocs"
     send_document_uri = True
 
@@ -12,7 +12,7 @@ class RustOpenExternalDoc(Handler):
         return dict(position=position)
 
     def process_response(self, response) -> None:
-        if self.loc == "web":
-            pass
-        else:  # fallback to 'local'
-            pass
+        if type(response) is dict and response[self.loc]:
+            eval_in_emacs("browse-url", response[self.loc])
+        elif response:
+            eval_in_emacs("browse-url", response)

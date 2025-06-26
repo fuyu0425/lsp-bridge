@@ -105,12 +105,21 @@
 
 (defun lsp-bridge-rust-open-external-doc-web ()
   (interactive)
-  (lsp-bridge-call-file-api "rust_open_external_doc" "web"))
+  (lsp-bridge-call-file-api "rust_open_external_doc" (lsp-bridge--position) "web"))
 
 (defun lsp-bridge-rust-open-external-doc-local ()
   (interactive)
-  (lsp-bridge-call-file-api "rust_open_external_doc" "local"))
+  (lsp-bridge-call-file-api "rust_open_external_doc" (lsp-bridge--position) "local"))
+
+(defun lsp-bridge-rust-goto-parent-module ()
+  (interactive)
+  (lsp-bridge-call-file-api "rust_parent_module" (lsp-bridge--position)))
+
+(defun lsp-bridge-rust-open-cargo-toml ()
+  (interactive)
+  (lsp-bridge-call-file-api "rust_open_cargo_toml"))
 
 (provide 'lsp-bridge-rust)
+
 
 ;;; lsp-bridge-rust.el ends here

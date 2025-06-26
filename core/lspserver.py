@@ -282,6 +282,7 @@ class LspServer:
         self.completion_resolve_provider = False
         self.rename_prepare_provider = False
         self.code_action_provider = False
+        self.execute_command_provider = False
         self.code_format_provider = False
         self.range_format_provider = False
         self.signature_help_provider = False
@@ -315,6 +316,7 @@ class LspServer:
             "refactor.rewrite",
             "source",
             "source.organizeImports"]
+        self.execute_command_commands = []
         self.text_document_sync = 2 # refer TextDocumentSyncKind. Can be None = 0, Full = 1 or Incremental = 2
         self.save_include_text = False
 
@@ -400,7 +402,10 @@ class LspServer:
                 "didChangeWatchedFiles": {
                     "dynamicRegistration": True,
                     "relativePatternSupport": True
-                }
+                },
+                "executeCommand": {
+                    "dynamicRegistration": True,
+                },
             },
             "textDocument": {
                 "completion": {
@@ -793,6 +798,8 @@ class LspServer:
             ("rename_prepare_provider", ["result", "capabilities", "renameProvider", "prepareProvider"]),
             ("code_action_provider", ["result", "capabilities", "codeActionProvider"]),
             ("code_action_kinds", ["result", "capabilities", "codeActionProvider", "codeActionKinds"]),
+            ("execute_command_provider", ["result", "capabilities", "executeCommandProvider"]),
+            ("execute_command_commands", ["result", "capabilities", "executeCommandProvider", "commands"]),
             ("code_format_provider", ["result", "capabilities", "documentFormattingProvider"]),
             ("range_format_provider", ["result", "capabilities", "documentRangeFormattingProvider"]),
             ("signature_help_provider", ["result", "capabilities", "signatureHelpProvider"]),
