@@ -165,9 +165,8 @@ class SearchSdcvWords:
                     fuzzy_candidates.append(candidate)
                 if len(candidates) > self.search_max_number:
                     break
-        # fill with fuzzy candidates
-        if len(candidates) < self.search_max_number:
-            candidates += fuzzy_candidates[:self.search_max_number - len(candidates)]
+
+        candidates += fuzzy_candidates[:self.search_max_number - len(candidates)]
 
         if ticker == self.search_ticker:
             # eval_in_emacs("lsp-bridge-search-backend--record-items", "search-sdcv-words",
