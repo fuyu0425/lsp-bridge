@@ -662,7 +662,6 @@ class LspBridge:
         # Receive elisp RPC call from remote server.
         log_time(f"Receive server elisp RPC: {message}")
 
-        # FIXME: wrong if listen on 127.0.0.1 and direct-tcp bindings
         host = message["host"]
 
         # Read elisp code from local Emacs, and sendback to remote server.

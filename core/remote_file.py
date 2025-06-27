@@ -50,7 +50,7 @@ class RemoteFileClient(threading.Thread):
         self.ssh_port = ssh_conf.get('port', 22)
         self.server_port = server_port
         self.callback = callback
-        self.remote_server_name = remote_server_name if remote_server_name else self.ssh_host # FIXME
+        self.remote_server_name = remote_server_name if remote_server_name else self.ssh_host
         [self.remote_python_command, self.remote_python_file, self.remote_log] = get_emacs_vars(["lsp-bridge-remote-python-command", "lsp-bridge-remote-python-file", "lsp-bridge-remote-log"])
 
         [self.user_ssh_private_key,
@@ -186,8 +186,6 @@ class RemoteFileClient(threading.Thread):
         remote_log = self.remote_log
 
         remote_sever_name = self.remote_server_name
-
-        # TODO: set remote_server_id argument; should be name used in tramp
 
         # use -l option to bash as a login shell, ensuring that login scripts (like ~/.bash_profile) are read and executed.
         # This is useful for lsp-bridge to use environment settings to correctly find out language server command
@@ -361,7 +359,6 @@ class RemoteFileServer:
         try:
             if self.client_socket:
                 if self.client_address:
-                    # FIXME: user remote_server_name
                     message["host"] = self.client_address[0]
                 if self.remote_server_name:
                     message["host"] = self.remote_server_name
