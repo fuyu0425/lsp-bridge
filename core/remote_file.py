@@ -191,10 +191,11 @@ class RemoteFileClient(threading.Thread):
 
         # use -l option to bash as a login shell, ensuring that login scripts (like ~/.bash_profile) are read and executed.
         # This is useful for lsp-bridge to use environment settings to correctly find out language server command
+        # -A (--ignore-ancestors) in pgrep is necesarry; otherwise, pgrep may not find the command itself
         _, stdout, stderr = self.ssh.exec_command(
             f"""
             nohup /bin/bash -l -c '
-            pid=$(pgrep -f '\\''lsp_bridge.py remote'\\'')
+            pid=$(pgrep -A -f '\\''lsp_bridge.py remote'\\'')
             if [ "$pid" == "" ]; then
                 echo -e "Start lsp-bridge process as user $(whoami)" | tee >{remote_log}
                 {remote_python_command} {remote_python_file} remote {remote_sever_name} >>{remote_log} 2>&1 &
@@ -217,7 +218,7 @@ class RemoteFileClient(threading.Thread):
             self.ssh.exec_command(
                 f"""
                 nohup /bin/bash -l -c '
-                pid=$(pgrep -f '\\''lsp_bridge.py remote'\\'')
+                pid=$(pgrep -A -f '\\''lsp_bridge.py remote'\\'')
                 echo "try kill $pid" | tee >> {remote_log}
                 if ! [ "$pid" == "" ]; then
                     echo -e "kill lsp-bridge process as user $(whoami)" | tee >>{remote_log}
