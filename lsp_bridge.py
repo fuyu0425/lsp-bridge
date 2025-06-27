@@ -233,15 +233,15 @@ class LspBridge:
               "Access files with 'lsp-bridge-open-remote-file' or 'find-file /docker:...'")
 
         # Build loop for remote files management.
-        self.file_server = FileSyncServer("0.0.0.0", REMOTE_FILE_SYNC_CHANNEL, self.remote_server_name)
+        self.file_server = FileSyncServer("127.0.0.1", REMOTE_FILE_SYNC_CHANNEL, self.remote_server_name)
 
         # Build loop for call remote command from local Emacs.
         # Start waiting for init_search_backends_complete_event
-        self.file_command_server = FileCommandServer("0.0.0.0", REMOTE_FILE_COMMAND_CHANNEL, self, self.remote_server_name)
+        self.file_command_server = FileCommandServer("127.0.0.1", REMOTE_FILE_COMMAND_CHANNEL, self, self.remote_server_name)
 
         # Build loop for call local Emacs function from server.
         # Signal that init_search_backends_complete_event is done
-        self.file_elisp_server = FileElispServer("0.0.0.0", REMOTE_FILE_ELISP_CHANNEL, self, self.remote_server_name)
+        self.file_elisp_server = FileElispServer("127.0.0.1", REMOTE_FILE_ELISP_CHANNEL, self, self.remote_server_name)
 
         set_lsp_bridge_server(self)
 
