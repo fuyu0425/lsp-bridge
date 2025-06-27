@@ -89,12 +89,10 @@ REMOTE_FILE_ELISP_CHANNEL = 9997
 class LspBridge:
     def __init__(self, args):
         # Check running environment.
-        # TODO: get remote_server_id from command line
-        # TODO: it should be conistent with tramp
-        self.running_in_server = len(args) == 0
+        self.running_in_server = False
         self.remote_server_name = None
-        # lsp_bridge.py example.com remote
-        # remote is just used an terminator;
+        # lsp_bridge.py remote example.com
+        # remote is used to indicate lsp-bridge running in remote server,
         # so pgrep can discern between local/remote lsp-bridge server
         if (len(args) == 2 and args[0] == 'remote'):
             self.running_in_server = True
@@ -1117,7 +1115,7 @@ def get_lang_server_path(server_name, is_multi_server=False):
     return server_path_current if server_path_current.exists() else server_path_default
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 3:
+    if len(sys.argv) >= 3 and args[2] == "profile":
         import cProfile
         profiler = cProfile.Profile()
         profiler.run("LspBridge(sys.argv[1:])")
