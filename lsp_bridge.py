@@ -1124,7 +1124,7 @@ def usage():
     print("  (server_name should be the one you referred to by tramp or just ip)") # Added two spaces for indentation
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 3 and args[2] == "profile":
+    if len(sys.argv) >= 3 and sys.argv[2] == "profile":
         import cProfile
         profiler = cProfile.Profile()
         profiler.run("LspBridge(sys.argv[1:])")
