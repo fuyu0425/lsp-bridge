@@ -96,9 +96,9 @@ class LspBridge:
         # lsp_bridge.py example.com remote
         # remote is just used an terminator;
         # so pgrep can discern between local/remote lsp-bridge server
-        if (len(args) == 2 and args[1] == 'remote'):
+        if (len(args) == 2 and args[0] == 'remote'):
             self.running_in_server = True
-            self.remote_server_name = args[0]
+            self.remote_server_name = args[1]
         if self.running_in_server:
             set_running_in_server()
 
