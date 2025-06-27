@@ -1114,10 +1114,19 @@ def get_lang_server_path(server_name, is_multi_server=False):
 
     return server_path_current if server_path_current.exists() else server_path_default
 
+def usage():
+    print("# For local server")
+    print("python lsp_bridge.py PORT (should not be run manually)")
+    print("\n# For remote server")  # Added a newline for better spacing
+    print("python lsp_bridge.py remote server_name")
+    print("  (server_name should be the one you referred to by tramp or just ip)") # Added two spaces for indentation
+
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and args[2] == "profile":
         import cProfile
         profiler = cProfile.Profile()
         profiler.run("LspBridge(sys.argv[1:])")
-    else:
+    elif len(sys.argv) >= 2:
         LspBridge(sys.argv[1:])
+    else:
+        usage()
