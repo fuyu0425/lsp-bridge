@@ -403,7 +403,7 @@ class FileAction:
         else:
             eval_in_emacs("lsp-bridge-diagnostic--list", dianostics)
 
-    def get_workspace_diagnostics(self, hide_severities=None):
+    def get_workspace_diagnostics(self, hide_severities=None, tramp_prefix=""):
         diagnostics = []
         diagnostic_counter = 0
         diagnostics_content = ""
@@ -445,7 +445,8 @@ class FileAction:
             if len(diagnostics) > 0:
                 if diagnostic_counter > 0:
                     diagnostics_content += "\n"
-                diagnostics_content += "".join([REFERENCE_PATH, file_path, REFERENCE_ENDC, "\n"])
+                tramp_file_path = f'{tramp_prefix}{file_path}'
+                diagnostics_content += "".join([REFERENCE_PATH, tramp_file_path, REFERENCE_ENDC, "\n"])
             for diagnostic in diagnostics:
                 diagnostic_counter +=1
                 server_name = diagnostic['server-name']
@@ -478,8 +479,8 @@ class FileAction:
         linecache.clearcache()  # clear line cache
         return diagnostics_content, diagnostic_counter
 
-    def list_workspace_diagnostics(self, hide_severities):
-        diagnostics_content, diagnostics_counter = self.get_workspace_diagnostics(hide_severities)
+    def list_workspace_diagnostics(self, hide_severities, tramp_prefix):
+        diagnostics_content, diagnostics_counter = self.get_workspace_diagnostics(hide_severities, tramp_prefix)
 
         if diagnostics_counter == 0:
             message_emacs("No diagnostics found.")

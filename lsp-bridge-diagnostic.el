@@ -395,7 +395,13 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
 ;; hacking for workspace diagnostic
 (defun lsp-bridge-diagnostic-list-workspace ()
   (interactive)
-  (lsp-bridge-call-file-api "list_workspace_diagnostics" lsp-bridge-diagnostic-hide-severities))
+  (let* ((filename (buffer-file-name))
+         (tramp-prefix (or (when (and filename (tramp-tramp-file-p filename))
+                             (let ((vec (tramp-dissect-file-name filename)))
+                               (concat "/" (tramp-file-name-method vec) ":" (tramp-file-name-host vec) ":"))) "")))
+    (lsp-bridge-call-file-api "list_workspace_diagnostics"
+                              lsp-bridge-diagnostic-hide-severities
+                              tramp-prefix)))
 
 (defun lsp-bridge-diagnostic--list-workspace (diagnostics-content diagnostics-counter)
   (lsp-bridge-ref-popup diagnostics-content diagnostics-counter "diagnostics-workspace"))
