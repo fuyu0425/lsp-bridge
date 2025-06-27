@@ -434,6 +434,7 @@ class LspBridge:
                 if server_host in self.host_ip_dict:
                     server_ip = self.host_ip_dict[server_host]
                     message_emacs(f"Resolve {server_host} to {server_ip} from host-ip cache")
+                    server_host = server_ip
                 else:
                     # https://stackoverflow.com/a/2816838
                     server_ips = [ str(i[4][0]) for i in socket.getaddrinfo(server_host, 0)]
@@ -444,6 +445,8 @@ class LspBridge:
                         message_emacs(f"Resolve {server_host} to {server_ip}")
                         server_host = server_ip
                         self.host_ip_dict[server_host] = server_ip
+                        if alias:
+                            self.host_ip_dict[alias] = server_ip
                 ssh_conf['hostname'] = server_ip # overwrite
 
             if not is_valid_ip(server_host):
