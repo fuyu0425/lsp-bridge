@@ -3186,7 +3186,7 @@ We need exclude `markdown-code-fontification:*' buffer in `lsp-bridge-monitor-be
                                              (list
                                               (lsp-bridge--position)
                                               (symbol-name major-mode)
-                                              (buffer-file-name)
+                                              lsp-bridge-remote-file-path
                                               relative-path
                                               tab-width
                                               all-text
