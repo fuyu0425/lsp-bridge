@@ -352,7 +352,8 @@ class Copilot:
             message_emacs(f'Already signed in as {result["user"]}')
             return
         eval_in_emacs("browse-url", result['verificationUri'])
-        message_emacs(f'Please enter user-code {result["userCode"]}')
+        message_emacs(f'Please enter user-code (copied to kill-ring): {result["userCode"]}')
+        evail_in_emacs('kill-new', {result["userCode"]})
 
     def logout(self):
         self.start_copilot()
