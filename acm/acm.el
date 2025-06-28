@@ -153,6 +153,11 @@
   :type 'boolean
   :group 'acm)
 
+(defcustom acm-enable-auto-select t
+  "Auto select first candidate in completion menu."
+  :type 'boolean
+  :group 'acm)
+
 (defcustom acm-enable-quick-access nil
   "Show quick-access in completion menu."
   :type 'boolean
@@ -686,7 +691,9 @@ The key of candidate will change between two LSP results."
             ;; Adjust `acm-menu-index' to -1 if no candidates found.
             (setq-local acm-menu-index -1)
           ;; First init `acm-menu-index' to 0.
-          (setq-local acm-menu-index 0)
+          (if acm-enable-auto-select
+              (setq-local acm-menu-index 0)
+            (setq-local acm-menu-index -1))
 
           ;; The following code is specifically to adjust the selection position of candidate when typing fast.
           (when (and current-select-candidate-index
@@ -1106,7 +1113,9 @@ The key of candidate will change between two LSP results."
     (acm-menu-adjust-pos)
 
     ;; Fetch `documentation' and `additionalTextEdits' information.
-    (acm-doc-try-show)
+    ;; (when (> acm-menu-index -1)
+    ;;     (acm-doc-try-show))
+    (acm-doc-try-show) ;; TODO: whether to show doc when menu index is -1?
     ))
 
 (cl-defmacro acm-silent (&rest body)
