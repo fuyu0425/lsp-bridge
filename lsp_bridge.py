@@ -621,14 +621,14 @@ class LspBridge:
         })
 
     @threaded
-    def func_request(self, remote_file_host, remote_file_path, method, args):
+    def func_request(self, remote_file_host, remote_file_path, method, args=None):
         self.send_remote_message(
             remote_file_host, self.remote_file_command_sender_queue, {
             "command": "func_request",
             "server": remote_file_host,
             "path": remote_file_path,
             "method": method,
-            "args": list(map(epc_arg_transformer, args))
+            "args": list(map(epc_arg_transformer, args or []))
         })
 
     # Functions for local to handle messages from remote server
