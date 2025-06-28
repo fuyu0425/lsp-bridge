@@ -193,7 +193,9 @@
     ("Macro" . " 󰰏 ")
     ("Interface" . "  ")
     ("Constant" . "  ")
-    ("Field" . "  "))
+    ("Field" . "  ")
+    ("Copilot". "  ")
+    )
   "Annotation icons with nerd-font.")
 
 (defcustom acm-icon-enable-nerd-icon t
@@ -310,6 +312,7 @@ If COLOR-NAME is unknown to Emacs, then return COLOR-NAME as-is."
     (unit :style "cod" :icon "symbol_ruler" :face font-lock-constant-face)
     (value :style "cod" :icon "symbol_field" :face font-lock-builtin-face)
     (variable :style "cod" :icon "symbol_variable" :face font-lock-variable-name-face)
+    (copilot :style "cod" :icon "copilot" :face `((t (:foreground "#808080"))))
     (t :style "cod" :icon "code" :face font-lock-warning-face))
   "Mapping of completion kinds to icons.
 
@@ -338,7 +341,7 @@ called with the candidate to return the icon."
 
 The mapping of kind -> icon is defined by the user in
 `acm-nerd-icons-mapping'."
-  (let* ((icon-entry (or (alist-get (or kind t) acm-nerd-icons-mapping)
+  (let* ((icon-entry (or (alist-get (or (intern kind) t) acm-nerd-icons-mapping)
                          (alist-get t acm-nerd-icons-mapping)))
          (style (plist-get icon-entry :style))
          (icon (plist-get icon-entry :icon))
