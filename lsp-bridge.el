@@ -1837,18 +1837,11 @@ So we build this macro to restore postion after code format."
         2)
      2))
 
-(defun lsp-bridge--position (&optional is-remote)
+(defun lsp-bridge--position ()
   "Get position of cursor."
   ;; we should use ABSOLUTE line number to be compatible with narrowed buffer
-  ;; FIXME: baindape for sending remote quest
-  ;; handling function should not have logic related to plist :line or :character
-  (if is-remote
-      (list "line" (1- (line-number-at-pos nil t))
-            "character" (lsp-bridge--calculate-column))
-    (list :line (1- (line-number-at-pos nil t))
-          :character (lsp-bridge--calculate-column))
-
-    ))
+  (list :line (1- (line-number-at-pos nil t))
+        :character (lsp-bridge--calculate-column)))
 
 (defun lsp-bridge--position-in-org ()
   "Get position in org source block.
@@ -3191,7 +3184,7 @@ We need exclude `markdown-code-fontification:*' buffer in `lsp-bridge-monitor-be
     (if (lsp-bridge-is-remote-file)
         (lsp-bridge-remote-send-func-request "copilot_complete"
                                              (list
-                                              (lsp-bridge--position t) ;; for remote
+                                              (lsp-bridge--position)
                                               (symbol-name major-mode)
                                               (buffer-file-name)
                                               relative-path

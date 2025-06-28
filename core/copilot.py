@@ -289,8 +289,8 @@ class Copilot:
                 "version": self.file_versions[file_path],
             },
             "position": {
-                "line": position[1],
-                "character": position[3]
+                "line": position['line'],
+                "character": position['character']
             },
             "context": {
                 "triggerKind": 2,
