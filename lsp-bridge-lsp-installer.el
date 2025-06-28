@@ -302,15 +302,21 @@ Only useful on GNU/Linux.  Automatically set if NixOS is detected."
 
 (defun lsp-bridge-copilot-login ()
   (interactive)
-  (lsp-bridge-call-async "copilot_login"))
+  (if (lsp-bridge-is-remote-file)
+      (lsp-bridge-remote-send-func-request "copilot_login")
+      (lsp-bridge-call-async "copilot_login")))
 
 (defun lsp-bridge-copilot-logout ()
   (interactive)
-  (lsp-bridge-call-async "copilot_logout"))
+  (if (lsp-bridge-is-remote-file)
+      (lsp-bridge-remote-send-func-request "copilot_logout")
+    (lsp-bridge-call-async "copilot_logout")))
 
 (defun lsp-bridge-copilot-status ()
   (interactive)
-  (lsp-bridge-call-async "copilot_status"))
+  (if (lsp-bridge-is-remote-file)
+      (lsp-bridge-remote-send-func-request "copilot_status")
+    (lsp-bridge-call-async "copilot_status")))
 
 (provide 'lsp-bridge-lsp-installer)
 
