@@ -460,6 +460,10 @@ LSP-Bridge will enable completion inside string literals."
   "The Python interpreter used to run lsp_bridge.py."
   :type 'string)
 
+(defcustom lsp-bridge-show-welcome t
+  "Show welcome message when connected."
+  :type 'boolean)
+
 (defcustom lsp-bridge-enable-debug nil
   "If you got segfault error, please turn this option.
 Then LSP-Bridge will start by gdb, please send new issue with `*lsp-bridge*' buffer content when next crash."

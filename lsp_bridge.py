@@ -804,9 +804,12 @@ class LspBridge:
         # Notify user server is ready.
         print("Start lsp server ({}) for {}".format(", ".join(servers), project_path))
 
-        message_emacs("Active {} '{}', enjoy hacking!".format(
-            "project" if os.path.isdir(project_path) else "file",
-            os.path.basename(project_path.rstrip(os.path.sep))))
+        [show_welcome] = get_emacs_vars(["lsp-bridge-show-welcome"])
+
+        if show_welcome:
+            message_emacs("Active {} '{}', enjoy hacking!".format(
+                "project" if os.path.isdir(project_path) else "file",
+                os.path.basename(project_path.rstrip(os.path.sep))))
 
     def load_single_lang_server(self, project_path, filepath):
         single_lang_server = get_emacs_func_result("get-single-lang-server", project_path, filepath)
@@ -892,7 +895,10 @@ class LspBridge:
                 # message back the LSP server command path to emacs for verification
                 # as some languages have runtime environment isolation
                 # for example python virtualenv, NodeJS nvm, Ruby RVM
-                message_emacs(f"found language server: {server_command_path}")
+                [show_welcome] = get_emacs_vars(["lsp-bridge-show-welcome"])
+
+                if show_welcome:
+                    message_emacs(f"found language server: {server_command_path}")
                 return True
             else:
                 error_message = "Error: can't find command '{}' to start LSP server {} ({})".format(
