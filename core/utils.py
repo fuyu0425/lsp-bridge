@@ -475,7 +475,7 @@ def split_docker_path(docker_path):
         return None
 
 def is_remote_path(filepath):
-    return filepath.startswith("/ssh:") or filepath.startswith("/docker:")
+    return filepath.startswith("/ssh:") or filepath.startswith("/scp:") or filepath.startswith("/docker:")
 
 def eval_sexps_in_emacs(sexps: List[str]):
     if isinstance(sexps, str):

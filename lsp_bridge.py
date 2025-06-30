@@ -408,11 +408,12 @@ class LspBridge:
 
         # tramp_file_name format example:
         #   /ssh:user@ip#port:/path/to/file
+        #   /scp:user@ip#port:/path/to/file
         #   /docker:user@container:/path/to/file
         # see https://www.gnu.org/software/tramp/#File-name-syntax
         tramp_method_prefix = tramp_file_name.rsplit(":", 1)[0]
 
-        if tramp_method_prefix.startswith("/ssh"):
+        if tramp_method_prefix.startswith("/ssh") or tramp_method_prefix.startswith("/scp"):
             alias = None
             # arguments are passed from emacs using standard TRAMP functions tramp-file-name-<field>
             if server_host in self.host_names:
