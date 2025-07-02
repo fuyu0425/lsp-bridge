@@ -312,7 +312,7 @@ If COLOR-NAME is unknown to Emacs, then return COLOR-NAME as-is."
     (unit :style "cod" :icon "symbol_ruler" :face font-lock-constant-face)
     (value :style "cod" :icon "symbol_field" :face font-lock-builtin-face)
     (variable :style "cod" :icon "symbol_variable" :face font-lock-variable-name-face)
-    (copilot :style "cod" :icon "copilot" :face `((t (:foreground "#808080"))))
+    (copilot :style "cod" :icon "copilot" :face (:foreground "#808080"))
     (t :style "cod" :icon "code" :face font-lock-warning-face))
   "Mapping of completion kinds to icons.
 
