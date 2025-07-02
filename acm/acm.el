@@ -335,7 +335,9 @@
     (when acm-preview-overlay
       (if (not (eq this-command 'acm-hide))
           ;; if `acm-hide' is called as command, not insert
-          (acm-complete t)
+          ;; NOTE: don't auto-complete preview
+          ;; (acm-complete t)
+          nil
         (delete-overlay acm-preview-overlay)
         (setq acm-preview-overlay nil)))
 

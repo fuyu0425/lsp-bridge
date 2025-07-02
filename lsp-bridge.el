@@ -1457,9 +1457,16 @@ So we build this macro to restore postion after code format."
   (setq-local lsp-bridge-cursor-before-command (point))
 
   ;; Tab-and-go
+  ;; NOTE: don't complete for preview like C-g
+  ;; (when (and acm-preview-overlay
+  ;;            (not (string-prefix-p "acm" (format "%s" this-command))))
+  ;;   (acm-complete))
   (when (and acm-preview-overlay
              (not (string-prefix-p "acm" (format "%s" this-command))))
-    (acm-complete))
+    (when (overlayp acm-preview-overlay)
+      (delete-overlay acm-preview-overlay))
+    (setq acm-preview-overlay nil))
+
 
   (when acm-filter-overlay
     (let ((this-command-string (format "%s" this-command)))
