@@ -806,20 +806,32 @@ The key of candidate will change between two LSP results."
   (let* ((candidate-info (acm-menu-current-candidate))
          (bound-start acm-menu-frame-popup-point)
          (backend (plist-get candidate-info :backend))
-         (candidate-expand (intern-soft (format "acm-backend-%s-candidate-expand" backend))))
+         (candidate-expand (intern-soft (format "acm-backend-%s-candidate-expand" backend)))
+         (do-insert (> acm-menu-index -1)))
 
-    (if (fboundp candidate-expand)
-        (funcall candidate-expand candidate-info bound-start)
-      (delete-region bound-start (point))
-      (insert (plist-get candidate-info :label))))
+    (unless do-insert
+      (let* ((event-type (event-basic-type last-command-event)))
+        (cond
+         ((eq event-type 109)
+         (self-insert-command 1 ?\n))
+         ((eq event-type 'return)
+          (self-insert-command 1 ?\n))
+         ((eq event-type 'tab)
+          (setq do-insert t)))))
+
+    (when do-insert
+      (if (fboundp candidate-expand)
+          (funcall candidate-expand candidate-info bound-start)
+        (delete-region bound-start (point))
+        (insert (plist-get candidate-info :label)))))
 
   (when (overlayp acm-preview-overlay)
     (delete-overlay acm-preview-overlay))
   (setq acm-preview-overlay nil)
-
   ;; Hide menu and doc frame after complete candidate.
   (unless not-hide
-    (acm-hide)))
+    (acm-hide))
+  )
 
 (defun acm-preview-create-overlay (beg end display)
   (let ((ov (make-overlay beg end nil)))
