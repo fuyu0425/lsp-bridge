@@ -720,7 +720,7 @@ If nil, lsp-bridge would try to detect by default."
     texmode-hook
     context-mode-hook
     texinfo-mode-hook
-    bibtex-mode-hook
+    ;; bibtex-mode-hook
     clojure-mode-hook
     clojurec-mode-hook
     clojurescript-mode-hook
@@ -796,7 +796,7 @@ If nil, lsp-bridge would try to detect by default."
     cwl-mode-hook
     odin-mode-hook
     ballerina-mode-hook
-    bibtex-mode-hook
+    ;; bibtex-mode-hook
     feature-mode-hook
     rego-mode-hook
     puppet-mode-hook
