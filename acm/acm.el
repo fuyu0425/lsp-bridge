@@ -339,7 +339,8 @@
           ;; (acm-complete t)
           nil
         (delete-overlay acm-preview-overlay)
-        (setq acm-preview-overlay nil)))
+        (setq acm-preview-overlay nil)
+        ))
 
     ;; Remove hook of `acm--pre-command'.
     (remove-hook 'pre-command-hook #'acm--pre-command 'local)
@@ -835,12 +836,46 @@ The key of candidate will change between two LSP results."
     (acm-hide))
   )
 
+(defun acm-preview-get-trailing (beg end str)
+  (let* ((current-string (buffer-substring-no-properties beg end))
+         (current-length (length current-string)))
+    (when (s-prefix? current-string str)
+        (substring str current-length))))
+
+;; TODO: preivew-overlay; only suffix with dimmer color like VSCode Copilot
 (defun acm-preview-create-overlay (beg end display)
-  (let ((ov (make-overlay beg end nil)))
+  (let* ((current-string (buffer-substring-no-properties beg end))
+         (current-length (length current-string))
+         (trailing (acm-preview-get-trailing beg end display))
+         ;; (ov (make-overlay (if trailing (+ (+ 0 beg) current-length) beg) end nil))
+         (ov (make-overlay (if trailing end beg) (+ 0 end) nil))
+
+         )
+    (overlay-put ov 'priority 1000)
+    (overlay-put ov 'window (selected-window))
+    (overlay-put ov 'face 'font-lock-comment-face)
+    (overlay-put ov 'face 'bold)
+    ;; (message "current:%S trailing: %S" current-string trailing)
+    (when (stringp display)
+      ;; (overlay-put ov 'display display)
+      ;; (overlay-put ov 'display (or trailing display))
+      (overlay-put ov 'display "")
+      (overlay-put ov 'before-string (or trailing display))
+
+      )
+
+    ov))
+
+;; TODO: preivew-overlay; only suffix with dimmer color like VSCode Copilot
+(defun acm-preview-create-overlay (beg end display)
+  (let* ((trailing (acm-preview-get-trailing beg end display))
+        (ov (make-overlay beg end nil)))
     (overlay-put ov 'priority 1000)
     (overlay-put ov 'window (selected-window))
     (when (stringp display)
-      (overlay-put ov 'display display))
+      (overlay-put ov 'display display)
+      ;; (overlay-put ov 'display (or trailing display))
+      )
     ov))
 
 (defun acm-preview-current ()
