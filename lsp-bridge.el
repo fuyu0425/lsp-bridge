@@ -2229,6 +2229,14 @@ Off by default."
   :type 'boolean
   :group 'lsp-bridge)
 
+(defcustom lsp-bridge-jump-to-def-show-references-at-definition nil
+  "If this option is turned on, when jumping to definition and the cursor
+is already at the definition point, show references instead.
+
+Off by default."
+  :type 'boolean
+  :group 'lsp-bridge)
+
 (defvar-local lsp-bridge-jump-to-def-in-other-window nil)
 
 (defun lsp-bridge-find-def ()
@@ -2483,35 +2491,50 @@ Then we need call `lsp-bridge--set-mark-ring-in-new-buffer' in new buffer after 
   (setq-local lsp-bridge-mark-ring (append (list lsp-bridge-position-before-jump) mark-ring)))
 
 (defun lsp-bridge-define--jump (filename filehost position)
-  (let (lsp-bridge-position-before-jump)
-    (lsp-bridge--record-mark-ring)
+  (cl-block lsp-bridge-define--jump
+    (let (lsp-bridge-position-before-jump)
+      ;; Check if we should show references instead of jumping to definition
+      (when (and lsp-bridge-jump-to-def-show-references-at-definition
+                 (string= filename (lsp-bridge-get-buffer-file-name-text))
+                 (string= filehost ""))
+        (let ((target-point (acm-backend-lsp-position-to-point position)))
+          (when-let* ((symbol-bounds (bounds-of-thing-at-point 'symbol))
+                      (symbol-start (car symbol-bounds))
+                      (symbol-end (cdr symbol-bounds)))
+            (when (and (>= target-point symbol-start)
+                       (<= target-point symbol-end)
+                       (>= (point) symbol-start)
+                       (<= (point) symbol-end))
+              (lsp-bridge-find-references)
+              (cl-return-from lsp-bridge-define--jump)))))
 
-    (if (and (not (string= filehost ""))
-             (not lsp-bridge-enable-with-tramp))
-        (lsp-bridge-call-async "open_remote_file" (format "%s:%s" filehost filename) position)
-      ;; filehost is not empty or lsp-bridge-enable-with-tramp is t
-      (when (string= filehost "127.0.0.1")
-        (setq filehost lsp-bridge-remote-file-host))
+      (lsp-bridge--record-mark-ring)
+      (if (and (not (string= filehost ""))
+               (not lsp-bridge-enable-with-tramp))
+          (lsp-bridge-call-async "open_remote_file" (format "%s:%s" filehost filename) position)
+        ;; filehost is not empty or lsp-bridge-enable-with-tramp is t
+        (when (string= filehost "127.0.0.1")
+          (setq filehost lsp-bridge-remote-file-host))
 
-      (let ((match-window (lsp-bridge--with-file-buffer filename filehost (get-buffer-window))))
-        ;; select the window to display definition
-        (if match-window
-            ;; if match-window is found, avoid using find-file to open the file twice
-            (progn
-              (cond
-               (lsp-bridge-find-def-select-in-open-windows (select-window match-window))
-               (lsp-bridge-jump-to-def-in-other-window (select-window match-window))
-               (t (switch-to-buffer (window-buffer match-window)))))
-          ;; match-window not found, we need to open the file
-          (let* ((tramp-file-name (concat (cdr (assoc filehost lsp-bridge-tramp-alias-alist)) filename)))
-            (if lsp-bridge-jump-to-def-in-other-window
-                (find-file-other-window tramp-file-name)
-              (find-file tramp-file-name))))
+        (let ((match-window (lsp-bridge--with-file-buffer filename filehost (get-buffer-window))))
+          ;; select the window to display definition
+          (if match-window
+              ;; if match-window is found, avoid using find-file to open the file twice
+              (progn
+                (cond
+                 (lsp-bridge-find-def-select-in-open-windows (select-window match-window))
+                 (lsp-bridge-jump-to-def-in-other-window (select-window match-window))
+                 (t (switch-to-buffer (window-buffer match-window)))))
+            ;; match-window not found, we need to open the file
+            (let* ((tramp-file-name (concat (cdr (assoc filehost lsp-bridge-tramp-alias-alist)) filename)))
+              (if lsp-bridge-jump-to-def-in-other-window
+                  (find-file-other-window tramp-file-name)
+                (find-file tramp-file-name))))
 
-        ;; Init jump history in new buffer.
-        (lsp-bridge--set-mark-ring-in-new-buffer)
+          ;; Init jump history in new buffer.
+          (lsp-bridge--set-mark-ring-in-new-buffer)
 
-        (lsp-bridge-define--jump-flash position)))))
+          (lsp-bridge-define--jump-flash position))))))
 
 (defun lsp-bridge-define--jump-flash (position)
   ;; We need call `display' before `goto-char',
