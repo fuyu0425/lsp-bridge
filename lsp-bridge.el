@@ -2508,6 +2508,21 @@ Then we need call `lsp-bridge--set-mark-ring-in-new-buffer' in new buffer after 
               (lsp-bridge-find-references)
               (cl-return-from lsp-bridge-define--jump)))))
 
+      ;; Use fallback find-def function if no definition found and option is not set
+      (when (and (not lsp-bridge-jump-to-def-show-references-at-definition)
+                 (string= filename (lsp-bridge-get-buffer-file-name-text))
+                 (string= filehost ""))
+        (let ((target-point (acm-backend-lsp-position-to-point position)))
+          (when-let* ((symbol-bounds (bounds-of-thing-at-point 'symbol))
+                      (symbol-start (car symbol-bounds))
+                      (symbol-end (cdr symbol-bounds)))
+            (when (and (>= target-point symbol-start)
+                       (<= target-point symbol-end)
+                       (>= (point) symbol-start)
+                       (<= (point) symbol-end))
+              (lsp-bridge-find-def-fallback position)
+              (cl-return-from lsp-bridge-define--jump)))))
+
       (lsp-bridge--record-mark-ring)
       (if (and (not (string= filehost ""))
                (not lsp-bridge-enable-with-tramp))
