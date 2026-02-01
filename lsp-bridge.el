@@ -1298,8 +1298,9 @@ So we build this macro to restore postion after code format."
   (if (lsp-bridge-is-remote-file)
       (lsp-bridge-remote-send-lsp-request method args)
     (if (and buffer-file-name (file-remote-p (buffer-file-name)))
-        (message "[LSP-Bridge] remote file \"%s\" is updating info... skip call %s."
-                 (buffer-file-name) method)
+        (unless (and (boundp 'lsp-bridge-remote-file-quiet) lsp-bridge-remote-file-quiet)
+          (message "[LSP-Bridge] remote file \"%s\" is updating info... skip call %s."
+                   (buffer-file-name) method))
       (when (lsp-bridge-call-file-api-p)
         (if (and (boundp 'acm-backend-lsp-filepath)
                  (file-exists-p acm-backend-lsp-filepath))
@@ -2913,11 +2914,15 @@ SymbolKind (defined in the LSP)."
       (lsp-bridge-workspace-list-symbols (buffer-substring-no-properties (mark) (point)))
     (lsp-bridge-workspace-list-symbols (substring-no-properties (symbol-name (symbol-at-point))))))
 
+;; TODO: whether it can be defvar-local?
+(defvar lsp-bridge--consult-callback nil)
+
 (defun lsp-bridge-workspace-list-symbols (query)
   (interactive "sWorkspace symbol query: ")
   (lsp-bridge-call-file-api "workspace_symbol" query))
 
 (defun lsp-bridge-workspace--list-symbols (info)
+  ;; TODO: test lsp-bridge--consult-callback
   (if (zerop (length info))
       (message "LSP server did not return any symbols.")
     (let* ((symbols (mapcar #'lsp-bridge-workspace-transform-info info))
@@ -3305,6 +3310,7 @@ We need exclude `markdown-code-fontification:*' buffer in `lsp-bridge-monitor-be
   (add-to-list 'mode-line-misc-info
                `(lsp-bridge-mode ("" lsp-bridge--mode-line-format " "))))
 
+(defvar-local lsp-bridge-remote-file-quiet nil)
 (defvar-local lsp-bridge-remote-file-flag nil)
 (defvar-local lsp-bridge-remote-file-tramp-method nil)
 (defvar-local lsp-bridge-remote-file-user nil)
@@ -3401,10 +3407,12 @@ then BODY is executed within that buffer."
          (connected-host (cdr (assoc tramp-connection-info lsp-bridge-tramp-connection-info))))
 
     (if (or force (not connected-host))
-        (when (and (not (member tramp-method '("sudo" "sudoedit" "su" "doas")))
-                   (not (member host lsp-bridge-tramp-blacklist)))
-          (read-only-mode 1)
-          (lsp-bridge-call-async "sync_tramp_remote" file-name tramp-method user host port path))
+        (if (and (not (member tramp-method '("sudo" "sudoedit" "su" "doas")))
+                 (not (member host lsp-bridge-tramp-blacklist)))
+            (progn
+              (read-only-mode 1)
+              (lsp-bridge-call-async "sync_tramp_remote" file-name tramp-method user host port path))
+          (setq-local lsp-bridge-remote-file-quiet t))
 
       (lsp-bridge--conditional-update-tramp-file-info file-name path connected-host
                                                       (setq-local lsp-bridge-remote-file-flag t)
