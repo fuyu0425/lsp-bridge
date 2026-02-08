@@ -251,23 +251,29 @@ lsp-bridge 开箱即用， 安装好语言对应的 [LSP 服务器](https://gith
 - `lsp-bridge-indent-left`: 根据 `lsp-bridge-formatting-indent-alist` 定义的缩进值, 向左缩进刚刚粘贴的文本
 - `lsp-bridge-indent-right`: 根据 `lsp-bridge-formatting-indent-alist` 定义的缩进值, 向右缩进刚刚粘贴的文本
 - `lsp-bridge-semantic-tokens-mode`: 开启或者关闭语义符号高亮， 自定义请参考 [Semantic Tokens Wiki](https://github.com/manateelazycat/lsp-bridge/wiki/Semantic-Tokens-%5B%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%E7%89%88%5D)
+- `lsp-bridge-breadcrumb-mode`: 开启顶部 breadcrumb 栏
 
 ## LSP 服务器选项
 lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， 您可以通过定制下面的选项来选择你喜欢的语言服务器:
 
 - `lsp-bridge-c-lsp-server`: C 语言的服务器， 可以选择`clangd`或者`ccls`
 - `lsp-bridge-elixir-lsp-server`: Elixir 语言的服务器， 可以选择`elixirLS`,`lexical`或者`nextls`
-- `lsp-bridge-python-lsp-server`: Python 语言的服务器， 可以选择 `basedpyright`, `pyright`, `jedi`, `python-ms`, `pylsp`, `ruff`, 需要注意的是, `lsp-bridge-multi-lang-server-mode-list` 的优先级高于 `lsp-bridge-single-lang-server-mode-list`, 如果你只想使用单服务器， 请先去掉 `lsp-bridge-multi-lang-server-mode-list` 中 python-mode 的设置
+- `lsp-bridge-python-lsp-server`: Python 语言的服务器， 可以选择 `basedpyright`, `pyright`, `jedi`, `python-ms`, `pylsp`, `ruff`, `ty`, 需要注意的是, `lsp-bridge-multi-lang-server-mode-list` 的优先级高于 `lsp-bridge-single-lang-server-mode-list`, 如果你只想使用单服务器， 请先去掉 `lsp-bridge-multi-lang-server-mode-list` 中 python-mode 的设置
+- `lsp-bridge-ruby-lsp-server`: Ruby 语言的服务器， 可以选择 `solargraph`, `ruby-lsp`
 - `lsp-bridge-php-lsp-server`: PHP 语言的服务器， 可以选择`intelephense`或者`phpactor`
 - `lsp-bridge-tex-lsp-server`: LaTeX 语言的服务器， 可以选择`texlab`,`digestif`或者`ltex-ls`
 - `lsp-bridge-csharp-lsp-server`: C#语言的服务器， 可以选择`omnisharp-mono`, `omnisharp-dotnet` 或者 `csharp-ls`, 注意你需要给 OmniSharp 文件**执行权限**才能正常工作
-- `lsp-bridge-python-multi-lsp-server`: Python 多语言服务器， 可以选择 `basedpyright_ruff`, `pyright_ruff`, `jedi_ruff`, `python-ms_ruff`, `pylsp_ruff`
 - `lsp-bridge-nix-lsp-server`: Nix 语言的服务器， 可以选择 `rnix-lsp`, `nixd` 或者 `nil`
 - `lsp-bridge-markdown-lsp-server`: Markdown 语言的服务器， 可以选择 `vale-ls` 或者 `marksman`
-- `lsp-bridge-lua-lsp-server`: Lua 语言的服务器， 可以选择 `sumneko`, 或者 `lua-lsp`
+- `lsp-bridge-lua-lsp-server`: Lua 语言的服务器， 可以选择 `sumneko` 或者 `lua-lsp`
 - `lsp-bridge-verilog-lsp-server`: Verilog 语言的服务器， 可以选择 `verible`, 或者 `svls`
-- `lsp-bridge-xml-lsp-server`: XML 语言的服务器， 可以选择 `lemminx`, 或者 `camells`
+- `lsp-bridge-xml-lsp-server`: XML 语言的服务器， 可以选择 `lemminx` 或者 `camells`
 - `lsp-bridge-cmake-lsp-server`: CMake 语言的服务器， 可以选择 `cmake-language-server`, 或者 `neocmakelsp`
+- `lsp-bridge-r-lsp-server`: R 语言的服务器， 可以选择 `rlanguageserver` 或者 `air`
+
+- `lsp-bridge-python-multi-lsp-server`: Python 多语言服务器， 可以选择 `basedpyright_ruff`, `pyright_ruff`, `jedi_ruff`, `python-ms_ruff`, `pylsp_ruff`, `ty_ruff`
+- `lsp-bridge-r-multi-lsp-server`: R 多语言服务器, 可以选择 `rlanguageserver_air`
+
 
 ## 选项
 
@@ -290,6 +296,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `lsp-bridge-enable-search-words`: 索引打开文件的单词， 默认打开
 - `lsp-bridge-enable-auto-format-code`: 自动格式化代码, 默认关闭
 - `lsp-bridge-enable-signature-help`: 支持函数参数显示， 默认打开
+- `lsp-bridge-enable-document-highlight`: 高亮文档中相同的符号， 默认关闭
 - `lsp-bridge-log-level`: 设置 LSP 消息日志等级， 默认为 `'default`, 除非开发目的， 平常请勿将此选项设置成`debug`, 以避免影响性能
 - `lsp-bridge-enable-debug`: 启用程序调试， 默认关闭
 - `lsp-bridge-disable-backup`: 禁止 emacs 对文件做版本管理， 默认打开
@@ -319,7 +326,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-enable-doc-markdown-render`: 对补全文档中的 Markdown 内容进行语法着色， 你可以选择`'async`, `t` 或者 `nil`. 当选择`'async` 时, lsp-bridge 会采用异步渲， 当选择 `t` 时, lsp-bridge 会采用同步渲染， 同步渲染会降低补全速度， 默认是 `async` 选项
 - `acm-enable-tabnine`: 是否打开 tabnine 补全支持， 默认打开， 打开后需要运行命令 `lsp-bridge-install-tabnine` 来安装 tabnine 后就可以使用了。 TabNine 会消耗巨大的 CPU， 导致你整个电脑都卡顿， 如果电脑性能不好， 不建议开启此选项
 - `acm-enable-codeium`: 是否打开 Codeium 补全支持， 打开后需要运行命令 `lsp-bridge-install-update-codeium` 来安装 Codeium， 再运行命令 `lsp-bridge-codeium-auth` 来获取 auth token 再运行命令 `lsp-bridge-codeium-input-auth-token` 获取 API Key 后就可以使用了。
-- `acm-enable-copilot`: 是否打开 Copilot 补全支持. 首先购买 Copilot 的服务 https://github.com/features/copilot , 打开后需要运行终端命令 `npm install -g @github/copilot-language-server` 来安装 Copilot， 再运行命令 `lsp-bridge-copilot-login`, lsp-bridge 会在 Minibuffer 显示 User Code, 复制 User Code 到打开的 Copilot 页面完成登录。 （中国用户要确认代理配置好才能正常登录 Copilot ）
+- `acm-enable-copilot`: 启用 Copilot 支持。首先，需要在 [https://github.com/features/copilot](https://github.com/features/copilot) 购买 Copilot 服务。启用时，Copilot 可以通过两种方式运行：一种是通过 Node.js 安装（`npm install -g @github/copilot-language-server`），另一种是使用 copilot-language-server 的二进制文件/安装包。使用哪种方式由变量 `acm-backend-copilot-launch-mode` 控制，可以设置为 `auto`、`node` 或 `binary`。默认值为 `auto`，它会先尝试使用 Node.js，如果失败则尝试二进制文件。`acm-backend-copilot-node-path` 可以用来指定 Node.js 的路径（默认值：`node`），`acm-backend-copilot-binary-path` 用来指定二进制文件的路径（默认值：`copilot-language-server`）。完成安装后，执行 `lsp-bridge-copilot-login`，lsp-bridge 会在 Minibuffer 中显示一个用户代码，将其复制到 Copilot 页面以完成登录。（中国用户要确认代理配置好才能正常登录 Copilot ）
 - `acm-enable-search-file-words`: 补全菜单是否显示打开文件的单词， 默认打开
 - `acm-enable-quick-access`: 是否在图标后面显示索引， 通过 Alt + Number 来快速选择候选词， 默认关闭
 - `acm-quick-access-use-number-select`: 是否用数字键快速选择候选词， 默认关闭， 打开这个选项会导致有时候干扰数字输入或误选候选词
@@ -327,6 +334,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-enable-citre`: [citre(ctags)](https://github.com/universal-ctags/citre) 补全， 默认关闭
 - `acm-enable-lsp-workspace-symbol`: LSP 符号补全， 默认关闭
 - `acm-doc-frame-max-lines`: 帮助窗口的最大行数， 默认是 20
+- `acm-doc-frame-boundary`: 文档框架的边界约束策略，选项包括 `'parent-frame`、`'display`，默认为 `'parent-frame`。`'parent-frame` 将文档框架限制在父 Emacs 窗口内，`'display` 允许文档框架超出 Emacs 窗口但不超出显示器边界
 - `acm-candidate-match-function`: lsp-bridge 前端对补全候选词的过滤算法， 选项有 `'regexp-quote`, `'orderless-flex`, `'orderless-literal`, `'orderless-prefixes`, `'orderless-regexp`, `'orderless-initialism`, 默认为 `regexp-quote`， orderless-\* 开头的算法需要额外安装 [orderless](https://github.com/oantolin/orderless)
 - `acm-completion-mode-candidates-merge-order`: 模式补全的显示顺序， 默认是按照 Elisp、 LSP、 Jupyter、 Ctags、 Citre、 ROAM、 单词、 Telegra 的顺序显示， 你可以根据你的需求调整模式补全的显示顺序
 - `acm-backend-lsp-candidate-min-length`: LSP 补全最小的触发字符数, 默认是 0
@@ -343,7 +351,8 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-backend-yas-candidates-number`: yasnippet 显示个数， 默认 2 个
 - `acm-backend-citre-keyword-complete`: 根据`acm-backend-citre-keywords-alist`定义的各个模式的关键字进行补全， 需要使能 citre 后才生效
 - `acm-backend-search-sdcv-words-dictionary`: 用于单词补全的 StarDict 词典， 默认是 `kdic-ec-11w`, 可以自定义为其他 StarDict 词典， 如果你的系统存在词典 `/usr/share/stardict/dic/stardict-oxford-gb-formated-2.4.2/oxford-gb-formated.ifo`, 你需要设置这个选项为 `/usr/share/stardict/dic/stardict-oxford-gb-formated-2.4.2/oxford-gb-formated`, 不需要包括 `.ifo` 扩展
-- `acm-backend-lsp-match-mode`: lsp-bridge 后端对补全候选词的过滤算法， 选项有 "prefix", "prefixCaseSensitive", "fuzzy"， 默认是 "fuzzy"
+- `acm-backend-lsp-match-mode`: lsp-bridge 后端对补全候选词的过滤算法， 选项有 "prefix", "prefixCaseSensitive", "substring" 和 "fuzzy"， 默认是 "fuzzy"
+- `acm-backend-lsp-case-mode`: lsp-bridge 后端中对补全候选词的过滤算法的大小写处理方式， 选项有 "ignore", "sensitive" 和 "smart"， 默认是 "ignore"
 - `acm-backend-lsp-frontend-filter-p`: 因为 LSP 候选词已经在 Python 后端进行了过滤， 所以没有必要在前端再进行一次过滤（参考选项 acm-candidate-match-function）, 默认为 nil, 该选项设置为 t 的时候会调用 `acm-candidate-match-function` 函数在前端对 LSP 候选词进行二次过滤
 - `acm-backend-lsp-show-progress`: 是否显示 LSP Server 工作进度, 默认关闭
 - `acm-enable-preview`: 开启 Tab-and-Go completion， 当改变当前候选时， 可以预览候选， 并且后续输入会选择预览候选， 默认关闭
@@ -387,6 +396,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 | Elm         | [elm-language-server](https://github.com/elm-tooling/elm-language-server)                          |                                                                                                                                                                                                                               |
 | Erlang      | [erlang-ls](https://github.com/erlang-ls/erlang_ls)                                                |                                                                                                                                                                                                                               |
 | Fennel     | [fennel-ls](https://git.sr.ht/~xerool/fennel-ls)                                                         |                                                                                                                                                                                                                               |
+| Fish     | [fish-lsp](https://github.com/ndonfris/fish-lsp)                                                         | `npm i -g fish-lsp`                                                                                                                                                                                                                              |
 | Fortran     | [fortls](https://github.com/gnikit/fortls)                                                         |                                                                                                                                                                                                                               |
 | Futhark     | [futhark-lsp](https://futhark-lang.org)                                         |                                                                                                                                                                                                                               |
 | Fuzion     | [fuzion-lsp-server](https://github.com/tokiwa-software/fuzion-lsp-server)                                         |                                                                                                                                                                                                                               |
@@ -399,6 +409,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 | Haskell     | [hls](https://github.com/haskell/haskell-language-server)                                          |                                                                                                                                                                                                                               |
 | HLASM     | [che-che4z-lsp-for-hlasm](https://github.com/eclipse-che4z/che-che4z-lsp-for-hlasm)                                          |                                                                                                                                                                                                                               |
 | HTML        | [vscode-html-language-server](https://github.com/hrsh7th/vscode-langservers-extracted)             | `npm i -g vscode-langservers-extracted`                                                                                                                                                                                       |
+| Hyprlang    | [hyprls](https://github.com/hyprland-community/hyprls)             | `go install github.com/hyprland-community/hyprls/cmd/hyprls@latest`, or [see alternative methods](https://github.com/hyprland-community/hyprls#installation)                                                                                                                                    |
 | Java        | [eclipse.jdt.ls](https://projects.eclipse.org/projects/eclipse.jdt.ls)                             | 请确保导出 `org.eclipse.jdt.ls.product/target/repository/bin` 到你系统的 PATH 路径, 具体请看 [Wiki](https://github.com/manateelazycat/lsp-bridge/wiki/Eclipse-JDT-Language-Server)                                            |
 | Javascript  | [typescript](https://github.com/microsoft/TypeScript)             | `npm i -g typescript`                                                                                                                                                                                                                               |
 |             | [typescript-language-server](https://github.com/typescript-language-server/typescript-language-server) | `npm i -g typescript-language-server`                                                                                                                                                                                                                               |
@@ -435,6 +446,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 |             | [pylsp](https://github.com/python-lsp/python-lsp-server)                                           | lsp-bridge-python-lsp-server 设置成 `pylsp`                                                                                                                                                                                   |
 |             | [basedpyright](https://detachhead.github.io/basedpyright)                                          | `pip install basedpyright`, `lsp-bridge-python-lsp-server` 设置成 `basedpyright`                                                                                             |
 |             | [pyright](https://github.com/microsoft/pyright)                                                    | `pip install pyright`, `lsp-bridge-python-lsp-server` 设置成 `pyright`, `pyright-background-analysis` 更快， 但是无法返回诊断信息                                                                                             |
+|             | [ty](https://github.com/astral-sh/ty)                                   | An extremely fast Python type checker and language server                                                                                                                                                                                                                                  |
 |             | [python-ms](https://github.com/microsoft/python-language-server)                                   | 支持 Python2 的 lsp                                                                                                                                                                                                           |
 |             | [ruff](https://github.com/charliermarsh/ruff-lsp)                                                  | `pip install ruff-lsp`， `lsp-bridge-python-lsp-server` 设置成 `ruff`， 只具备 linter 的功能。 如需补全等功能， 安装其他的 Python 语言服务器， 并把 `lsp-bridge-python-multi-lsp-server` 设置成 `[相应的语言服务器名称]_ruff` |
 | QML         | [qmlls](https://github.com/qt/qtdeclarative/tree/dev/tools/qmlls)                                  | QT 6.3.0 之后的版本自带 qmlls， 将 qmlls 所在目录加到 PATH 中                                                                                                                                                                 |
@@ -446,6 +458,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 | Rego        | [regal](https://github.com/StyraInc/regal)                                               |                                                                                                                                                                                                                                |
 | Robot        | [vscode-rf-language-server](https://github.com/tomi/vscode-rf-language-server)                                               | `pip install robotframework --user`                                                                                                                                                                                                                               |
 | Ruby        | [solargraph](https://github.com/castwide/solargraph)                                               |                                                                                                                                                                                                                               |
+|             | [ruby-lsp](https://github.com/Shopify/ruby-lsp)                                               |                                                                                                                                                                                                                               |
 | Rust        | [rust-analyzer](https://github.com/rust-lang/rust-analyzer)                                        |                                                                                                                                                                                                                               |
 | SASS        | [emmet-ls](https://github.com/aca/emmet-ls)                                                        | `npm install -g emmet-ls`                                                                                                                                                                                                     |
 | Scala       | [metals](https://scalameta.org/metals/)                                                            |                                                                                                                                                                                                                               |
@@ -466,6 +479,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 | VHDL        | [vhdl-tool](https://www.vhdltool.com)                                                              |                                                                                                                                                                                                                               |
 | Vim        | [vim-language-server](https://github.com/iamcco/vim-language-server)                                                              | `npm install -g vim-language-server`                                                                                                                                                                                                                              |
 | Vue         | [volar](https://github.com/johnsoncodehk/volar)                                                    | `npm install -g typescript @vue/language-server`                                                                                                                                                                              |
+| WebAssembly | [wasm-language-tools](https://github.com/g-plane/wasm-language-tools)                              |                                                                                                                                                                                                                                |
 | Wxml        | [wxml-language-server](https://github.com/chemzqm/wxml-languageserver)                             |                                                                                                                                                                                                                               |
 | XML        | [lemminx](https://github.com/eclipse/lemminx)                   | `lsp-bridge-xml-lsp-server` 设置为 `lemminx`                                                                                                                                                                                         |
 |         | [camells](https://github.com/camel-tooling/camel-language-server/)                   | `lsp-bridge-xml-lsp-server` 设置为 `camells`                                                                                                                                                                                         |

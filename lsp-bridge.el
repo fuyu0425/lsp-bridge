@@ -98,6 +98,7 @@
 (require 'lsp-bridge-dart)
 (require 'lsp-bridge-semantic-tokens)
 (require 'lsp-bridge-rust)
+(require 'lsp-bridge-breadcrumb)
 
 (defgroup lsp-bridge nil
   "LSP-Bridge group."
@@ -535,6 +536,11 @@ which refer to https://docs.python.org/3/library/logging.html#levels for more de
 Possible choices are basedpyright, pyright, pyright-background-analysis, jedi, python-ms, pylsp, and ruff."
   :type 'string)
 
+(defcustom lsp-bridge-ruby-lsp-server "solargraph"
+  "Default LSP server for Ruby.
+Possible choices are `solargraph', `ruby-lsp'."
+  :type 'string)
+
 (defcustom lsp-bridge-python-multi-lsp-server "basedpyright_ruff"
   "Default Multi LSP server for Python.
 Possible choices are basedpyright_ruff, pyright_ruff, pyright-background-analysis_ruff, jedi_ruff, python-ms_ruff, and pylsp_ruff."
@@ -572,6 +578,15 @@ Possible choices are basedpyright_ruff, pyright_ruff, pyright-background-analysi
   "Default LSP server for cmake, you can choose `cmake-language-server', `neocmakelsp'"
   :type 'string)
 
+(defcustom lsp-bridge-r-lsp-server "rlanguageserver"
+  "Default LSP server for R, you can choose `rlanguageserver' or `air'."
+  :type 'string)
+
+(defcustom lsp-bridge-r-multi-lsp-server "rlanguageserver_air"
+  "Default Multi LSP server for R.
+Possible choices are `rlanguageserver_air'."
+  :type 'string)
+
 (defcustom lsp-bridge-tsdk-path nil
   "Tsserver lib*.d.ts directory path in current system needed by some lsp servers.
 If nil, lsp-bridge would try to detect by default."
@@ -589,7 +604,8 @@ If nil, lsp-bridge would try to detect by default."
 
 (defcustom lsp-bridge-multi-lang-server-mode-list
   '(((python-mode python-ts-mode) . lsp-bridge-python-multi-lsp-server)
-    ((qml-mode qml-ts-mode) . "qmlls_javascript"))
+    ((qml-mode qml-ts-mode) . "qmlls_javascript")
+    (ess-r-mode . lsp-bridge-r-multi-lsp-server))
   "The multi lang server rule for file mode."
   :type 'cons)
 
@@ -600,7 +616,7 @@ If nil, lsp-bridge would try to detect by default."
     ((java-mode java-ts-mode) .                                                  "jdtls")
     ((julia-mode) .                                                              "julials")
     ((python-mode python-ts-mode) .                                              lsp-bridge-python-lsp-server)
-    ((ruby-mode ruby-ts-mode) .                                                  "solargraph")
+    ((ruby-mode ruby-ts-mode) .                                                  lsp-bridge-ruby-lsp-server)
     ((rust-mode rustic-mode rust-ts-mode rstml-ts-mode) .                        "rust-analyzer")
     (move-mode .                                                                 "move-analyzer")
     ((elixir-mode elixir-ts-mode heex-ts-mode) .                                 lsp-bridge-elixir-lsp-server)
@@ -608,9 +624,9 @@ If nil, lsp-bridge would try to detect by default."
     (groovy-mode .                                                               "groovy-language-server")
     (haskell-mode .                                                              "hls")
     ((lua-mode lua-ts-mode)  .                                                   lsp-bridge-lua-lsp-server)
-    (markdown-mode .                                                             lsp-bridge-markdown-lsp-server)
+    ((markdown-mode gfm-mode) .                                                  lsp-bridge-markdown-lsp-server)
     (dart-mode .                                                                 "dart-analysis-server")
-    (scala-mode .                                                                "metals")
+    ((scala-mode scala-ts-mode) .                                                "metals")
     ((js2-mode js-mode js-ts-mode rjsx-mode) .                                   "javascript")
     (js-jsx-mode .                                                               "javascriptreact")
     ((typescript-tsx-mode tsx-ts-mode) .                                         "typescriptreact")
@@ -628,17 +644,18 @@ If nil, lsp-bridge would try to detect by default."
       clojure-ts-clojurescript-mode
       clojure-ts-clojuredart-mode)  .                                                   "clojure-lsp")
     ((sh-mode bash-mode bash-ts-mode) .                                          "bash-language-server")
+    (fish-mode .                                                                 "fish-lsp")
     ((css-mode css-ts-mode) .                                                    "vscode-css-language-server")
     (elm-mode   .                                                                "elm-language-server")
     ((php-mode php-ts-mode) .                                                    lsp-bridge-php-lsp-server)
     ((yaml-mode yaml-ts-mode) .                                                  "yaml-language-server")
-    (zig-mode .                                                                  "zls")
+    ((zig-mode zig-ts-mode) .                                                    "zls")
     ((dockerfile-mode dockerfile-ts-mode) .                                      "docker-langserver")
     (d-mode .                                                                    "serve-d")
     ((fortran-mode f90-mode) .                                                   "fortls")
     ((nix-mode nix-ts-mode) .                                                    lsp-bridge-nix-lsp-server)
     (nickel-mode .                                                               "nls")
-    (ess-r-mode .                                                                "rlanguageserver")
+    (ess-r-mode .                                                                lsp-bridge-r-lsp-server)
     ((graphql-mode graphql-ts-mode) .                                            "graphql-lsp")
     (swift-mode .                                                                "swift-sourcekit")
     ((csharp-mode csharp-ts-mode) .                                              lsp-bridge-csharp-lsp-server)
@@ -653,6 +670,7 @@ If nil, lsp-bridge would try to detect by default."
     (solidity-mode .                                                             "solidity")
     (gleam-ts-mode .                                                             "gleam")
     (ada-mode .                                                                  "ada-language-server")
+    (hyprlang-ts-mode .                                                          "hyprls")
     (scad-mode .                                                                 "openscad-lsp")
     (sml-mode .                                                                  "millet")
     (fuzion-mode .                                                               "fuzion-language-server")
@@ -669,6 +687,7 @@ If nil, lsp-bridge would try to detect by default."
     (nxml-mode .                                                                 lsp-bridge-xml-lsp-server)
     (robot-mode .                                                                "vscode-rf-language-server")
     (vimrc-mode .                                                                "vim-language-server")
+    (wat-mode .                                                                  "wasm-language-tools")
     (terraform-mode .                                                            "terraform-ls")
     (jsonnet-mode .                                                              "jsonnet-language-server")
     (glsl-mode .                                                                 "glsl-language-server")
@@ -708,6 +727,7 @@ If nil, lsp-bridge would try to detect by default."
     haskell-literate-mode-hook
     dart-mode-hook
     scala-mode-hook
+    scala-ts-mode-hook
     typescript-mode-hook
     typescript-tsx-mode-hook
     js2-mode-hook
@@ -787,6 +807,7 @@ If nil, lsp-bridge would try to detect by default."
     solidity-mode-hook
     gleam-ts-mode-hook
     ada-mode-hook
+    hyprlang-ts-mode-hook
     scad-mode-hook
     sml-mode-hook
     fuzion-mode-hook
@@ -814,6 +835,8 @@ If nil, lsp-bridge would try to detect by default."
     perl-mode-hook
     futhark-mode-hook
     conf-toml-mode-hook
+    fish-mode-hook
+    wat-mode-hook
     )
   "The default mode hook to enable lsp-bridge."
   :type '(repeat variable))
@@ -872,6 +895,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (raku-mode                  . raku-indent-offset)  ; Perl6/Raku
     (erlang-mode                . erlang-indent-level) ; Erlang
     (ada-mode                   . ada-indent)          ; Ada
+    (hyprlang-ts-mode           . hyprlang-ts-mode-indent-offset) ; Hyprlang
     (scad-mode                  . lsp-bridge-indent-two-level) ; OpenSCAD
     (sml-mode                   . sml-indent-level) ; Standard ML
     (fuzion-mode                . lsp-bridge-indent-two-level) ; Fuzion
@@ -895,6 +919,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (hlasm-mode                 . lsp-bridge-indent-eight-level) ; HLASM
     (yang-mode                  . lsp-bridge-indent-two-level) ; Yang
     (mint-mode                  . lsp-bridge-indent-two-level) ; Mint
+    (wat-mode                   . lsp-bridge-indent-two-level) ; WebAssembly Text Format
     (purescript-mode            . purescript-indent-offset) ; PureScript
     (futhark-mode               . futhark-indent-level)     ; Futhark
     (sgml-mode                  . sgml-basic-offset)        ; SGML
@@ -917,6 +942,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (rstml-ts-mode              . rust-ts-mode-indent-offset) ; Rust
     (rustic-mode                . rustic-indent-offset)       ; Rust
     (scala-mode                 . scala-indent:step)          ; Scala
+    (scala-ts-mode              . scala-indent:step)          ; Scala
     (powershell-mode            . powershell-indent)      ; PowerShell
     (ess-mode                   . ess-indent-offset)      ; ESS (R)
     (yaml-mode                  . yaml-indent-offset)     ; YAML
@@ -947,6 +973,7 @@ you can customize `lsp-bridge-get-workspace-folder' to return workspace folder p
     (sh-mode .            "\$\{")
     (bash-mode .          "\$\{")
     (bash-ts-mode .       "\$\{")
+    (fish-mode .          "\$\{")
     (typst-ts-mode .      "\$\{")
     (typst--base-mode .   "\$\{")
     (typst--code-mode .   "\$\{")
@@ -2810,7 +2837,11 @@ Default is `bottom-right', you can choose other value: `top-left', `top-right', 
       ;;   (acm-run-idle-func lsp-bridge-highlight-timer lsp-bridge-highlight-fetch-idle 'lsp-bridge-highlight-fetch))
 
       (when lsp-bridge-enable-auto-format-code
-        (acm-run-idle-func lsp-bridge-auto-format-code-timer lsp-bridge-auto-format-code-idle 'lsp-bridge-auto-format-code)))
+        (acm-run-idle-func lsp-bridge-auto-format-code-timer lsp-bridge-auto-format-code-idle 'lsp-bridge-auto-format-code))
+
+      (when lsp-bridge-enable-document-highlight
+        (lsp-bridge-enable-document-highlight-timer)
+        (lsp-bridge-document-highlight-setup)))
 
     (dolist (hook lsp-bridge--internal-hooks)
       (apply #'add-hook hook))
@@ -3566,6 +3597,73 @@ Returns the type name or nil if not found."
 
 
 ;; TODO: lsp-bridge-spell => use workspace symbol to correct funciton/type name
+
+
+(defcustom lsp-bridge-enable-document-highlight nil
+  "Enable document highlight."
+  :type 'boolean
+  :group 'lsp-bridge)
+
+(defvar lsp-bridge-document-highlight-timer nil)
+
+(defun lsp-bridge-document-highlight ()
+  (when (and lsp-bridge-mode
+             lsp-bridge-enable-document-highlight
+             (not (minibufferp)))
+    (lsp-bridge-call-file-api "document_highlight" (lsp-bridge--position))))
+
+(defun lsp-bridge-document-highlight-render (highlights)
+  (remove-overlays (point-min) (point-max) 'face 'lsp-bridge-document-highlight-face)
+  (dolist (highlight highlights)
+    (let* ((range (plist-get highlight :range))
+           (start (plist-get range :start))
+           (end (plist-get range :end))
+           (start-line (plist-get start :line))
+           (start-character (plist-get start :character))
+           (end-line (plist-get end :line))
+           (end-character (plist-get end :character))
+           (start-pos (lsp-bridge-document-highlight--position-to-point start-line start-character))
+           (end-pos (lsp-bridge-document-highlight--position-to-point end-line end-character))
+           (overlay (make-overlay start-pos end-pos)))
+      (overlay-put overlay 'face 'lsp-bridge-document-highlight-face)
+      (overlay-put overlay 'window (selected-window)))))
+
+(defun lsp-bridge-document-highlight--position-to-point (line character)
+  (save-excursion
+    (goto-char (point-min))
+    (forward-line line)
+    (forward-char character)
+    (point)))
+
+(defface lsp-bridge-document-highlight-face
+  '((t :inherit highlight :background "gray20"))
+  "Face for document highlight."
+  :group 'lsp-bridge)
+
+(defun lsp-bridge-document-highlight-cleanup ()
+  (remove-overlays (point-min) (point-max) 'face 'lsp-bridge-document-highlight-face))
+
+(defun lsp-bridge-enable-document-highlight-timer ()
+  (unless lsp-bridge-document-highlight-timer
+    (setq lsp-bridge-document-highlight-timer
+          (run-with-idle-timer 0.5 t #'lsp-bridge-document-highlight))))
+
+(defun lsp-bridge-toggle-document-highlight ()
+  "Toggle document highlight."
+  (interactive)
+  (if lsp-bridge-enable-document-highlight
+      (progn
+        (setq lsp-bridge-enable-document-highlight nil)
+        (lsp-bridge-document-highlight-cleanup)
+        (message "Document highlight disabled"))
+    (setq lsp-bridge-enable-document-highlight t)
+    (lsp-bridge-enable-document-highlight-timer)
+    (lsp-bridge-document-highlight-setup)
+    (lsp-bridge-document-highlight)
+    (message "Document highlight enabled")))
+
+(defun lsp-bridge-document-highlight-setup ()
+  (add-hook 'post-command-hook #'lsp-bridge-document-highlight-cleanup nil t))
 
 (provide 'lsp-bridge)
 

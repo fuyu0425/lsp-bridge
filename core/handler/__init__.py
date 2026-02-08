@@ -79,3 +79,5 @@ from core.handler.diagnostic import Diagnostic # noqa: F401
 # TODO: merge to one rust-analyzer-extension.py
 from core.handler.rust_open_external_doc import RustOpenExternalDoc # noqa: F401
 from core.handler.rust_parent_module import RustParentModule, RustOpenCargoToml # noqa: F401
+from core.handler.breadcrumb import Breadcrumb # noqa: F401
+from core.handler.document_highlight import DocumentHighlight # noqa: F401
