@@ -9,3 +9,4 @@ workspace/
 .aider*
 .env
 lbr_log.txt
+.omx/

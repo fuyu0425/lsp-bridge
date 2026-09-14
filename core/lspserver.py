@@ -524,11 +524,31 @@ class LspServer:
 
         return initialization_options
 
+    def get_document_uri(self, filepath):
+        """Get the document URI for a filepath, remapping .org files to a virtual
+        project file when orgBabelVirtualFile is configured in langserver JSON.
+
+        Project-based LSP servers (e.g. rust-analyzer, clangd) only provide full
+        completions for files that belong to the project. When editing code in an
+        .org file, the URI has a .org extension which these servers treat as
+        "detached" — returning no library/dependency completions.
+
+        The "orgBabelVirtualFile" field lets you specify a project file path
+        (relative to project root) that the .org content should masquerade as,
+        e.g. "src/main.rs" for rust-analyzer."""
+        if filepath.endswith('.org') and "orgBabelVirtualFile" in self.server_info:
+            base = self.project_path
+            if not os.path.isdir(base):
+                base = os.path.dirname(base)
+            virtual_file = os.path.join(base, self.server_info["orgBabelVirtualFile"])
+            return path_to_uri(virtual_file)
+        return path_to_uri(filepath)
+
     def parse_document_uri(self, filepath, external_file_link):
         """If FileAction include external_file_link return by LSP server, such as jdt.
         We should use external_file_link, such as uri 'jdt://xxx', otherwise use filepath as textDocument uri."""
         # Init with filepath.
-        uri = path_to_uri(filepath)
+        uri = self.get_document_uri(filepath)
 
         if external_file_link is not None:
             if urlparse(external_file_link).scheme != "":
@@ -576,7 +596,7 @@ class LspServer:
     def send_did_close_notification(self, filepath):
         self.sender.send_notification("textDocument/didClose", {
             "textDocument": {
-                "uri": path_to_uri(filepath),
+                "uri": self.get_document_uri(filepath),
             }
         })
 
@@ -592,7 +612,7 @@ class LspServer:
         if self.save_file_provider:
             args = {
                 "textDocument": {
-                    "uri": path_to_uri(filepath)
+                    "uri": self.get_document_uri(filepath)
                 }
             }
 
@@ -620,7 +640,7 @@ class LspServer:
         # otherwise LSP server won't response client request, such as completion, find-define, find-references and rename etc.
         self.sender.send_notification("textDocument/didChange", {
             "textDocument": {
-                "uri": path_to_uri(filepath),
+                "uri": self.get_document_uri(filepath),
                 "version": version
             },
             "contentChanges": [
@@ -641,7 +661,7 @@ class LspServer:
                 file_content = f.read()
         self.sender.send_notification("textDocument/didChange", {
             "textDocument": {
-                "uri": path_to_uri(filepath),
+                "uri": self.get_document_uri(filepath),
                 "version": version
             },
             "contentChanges": [
@@ -912,7 +932,8 @@ class LspServer:
                     progress_message += str(message_attr)
 
             if progress_message != "":
-                eval_in_emacs("lsp-bridge--record-work-done-progress", "[LSP-Bridge] " + progress_message)
+                file_paths = list(self.files.keys())
+                eval_in_emacs("lsp-bridge--record-work-done-progress", "[LSP-Bridge] " + progress_message, file_paths)
 
     def handle_register_capability_message(self, message):
         if "method" in message and message["method"] in ["client/registerCapability"]:
@@ -929,6 +950,31 @@ class LspServer:
             except:
                 log_time(traceback.format_exc())
 
+            self.sender.send_response(message["id"], None)
+
+        if "method" in message and message["method"] in ["client/unregisterCapability"]:
+            # Reply is mandatory: gopls blocks its session (and the shared
+            # daemon forwarder) waiting for this response, after which every
+            # request (definition, references, etc.) hangs forever.
+            self.sender.send_response(message["id"], None)
+
+    ANSWERED_SERVER_REQUEST_METHODS = [
+        "workspace/configuration",
+        "workspace/applyEdit",
+        "window/workDoneProgress/create",
+        "client/registerCapability",
+        "client/unregisterCapability",
+    ]
+
+    def handle_unanswered_request_message(self, message):
+        # Every server->client *request* needs a response, or servers like
+        # gopls block their whole session on the missing reply. Null is a
+        # legal response for the requests we can't act on (e.g.
+        # window/showMessageRequest means "user dismissed the prompt").
+        if "id" in message and "method" in message and \
+           message["method"] not in self.ANSWERED_SERVER_REQUEST_METHODS:
+            log_time("Send null response to unhandled server request {} ({})".format(
+                message["method"], message["id"]))
             self.sender.send_response(message["id"], None)
 
     def handle_recv_message(self, message: dict):

@@ -45,6 +45,7 @@ class RemoteFileClient(threading.Thread):
         threading.Thread.__init__(self)
 
         # Init.
+        self.ssh_conf = ssh_conf
         self.ssh_host = ssh_conf['hostname']
         self.ssh_user = ssh_conf.get('user', "root")
         self.ssh_port = ssh_conf.get('port', 22)
@@ -69,22 +70,26 @@ class RemoteFileClient(threading.Thread):
     def ssh_private_key(self):
         """Retrieves the path to the SSH private key file.
 
-        The user can specify the SSH private key path by setting the
-        `lsp-bridge-user-ssh-private-key` in emacs.
-
-        If this configuration is not set, the function defaults to using the
-        first found public key to determine the private key file in the `.ssh`
-        directory.
+        Priority:
+        1. Emacs variable `lsp-bridge-user-ssh-private-key`
+        2. `identityfile` from the parsed SSH config
+        3. First .pub file found in ~/.ssh/ (original fallback)
         """
-        if not self.user_ssh_private_key:
-            ssh_dir = "~/.ssh"
-            ssh_dir = os.path.expanduser(ssh_dir)
-            pub_keys = glob.glob(os.path.join(ssh_dir, "*.pub"))
-            default_pub_key = pub_keys[0]
-            private_key = default_pub_key[: -len(".pub")]
-        else:
-            private_key = os.path.expanduser(self.user_ssh_private_key)
-        return private_key
+        if self.user_ssh_private_key:
+            return os.path.expanduser(self.user_ssh_private_key)
+
+        # Use identityfile from SSH config if available
+        identity_files = self.ssh_conf.get('identityfile', [])
+        if identity_files:
+            # paramiko returns identityfile as a list; use the first entry
+            return os.path.expanduser(identity_files[0])
+
+        ssh_dir = os.path.expanduser("~/.ssh")
+        pub_keys = glob.glob(os.path.join(ssh_dir, "*.pub"))
+        if pub_keys:
+            return pub_keys[0][: -len(".pub")]
+
+        return None
 
     def connect_ssh(self, use_gssapi, proxy_command):
         """Connect to remote ssh_host
@@ -189,11 +194,11 @@ class RemoteFileClient(threading.Thread):
 
         # use -l option to bash as a login shell, ensuring that login scripts (like ~/.bash_profile) are read and executed.
         # This is useful for lsp-bridge to use environment settings to correctly find out language server command
-        # -A (--ignore-ancestors) in pgrep is necesarry; otherwise, pgrep may not find the command itself
+        # Brackets keep pgrep from matching its own command line.
         _, stdout, stderr = self.ssh.exec_command(
             f"""
             nohup /bin/bash -l -c '
-            pid=$(pgrep -A -f '\\''lsp_bridge.py remote'\\'')
+            pid=$(pgrep -f '\\''[l]sp_bridge.py remote'\\'')
             if [ "$pid" == "" ]; then
                 echo -e "Start lsp-bridge process as user $(whoami)" | tee >{remote_log}
                 {remote_python_command} {remote_python_file} remote {remote_sever_name} >>{remote_log} 2>&1 &
@@ -216,7 +221,7 @@ class RemoteFileClient(threading.Thread):
             self.ssh.exec_command(
                 f"""
                 nohup /bin/bash -l -c '
-                pid=$(pgrep -A -f '\\''lsp_bridge.py remote'\\'')
+            pid=$(pgrep -f '\\''[l]sp_bridge.py remote'\\'')
                 echo "try kill $pid" | tee >> {remote_log}
                 if ! [ "$pid" == "" ]; then
                     echo -e "kill lsp-bridge process as user $(whoami)" | tee >>{remote_log}
@@ -483,13 +488,21 @@ class FileElispServer(RemoteFileServer):
         # remote server lsp-bridge process use this cient_socket to call elisp function from local Emacs.
         log_time(f"Client connect from {self.client_address[0]}:{self.client_address[1]}")
 
-        self.rpcs.clear()
+        for rpc in self.rpcs.values():
+            rpc["result"] = None
+            rpc["completion"].set()
+
+        self.lsp_bridge.init_search_backends_complete_event.clear()
+
         threading.Thread(target=super().handle_client).start()
 
-        self.lsp_bridge.init_search_backends()
-        log_time("init_search_backends finish")
-        # Signal that init_search_backends is done
-        self.lsp_bridge.init_search_backends_complete_event.set()
+        try:
+            self.lsp_bridge.init_search_backends()
+            log_time("init_search_backends finish")
+        except Exception:
+            logger.exception("init_search_backends failed")
+        finally:
+            self.lsp_bridge.init_search_backends_complete_event.set()
 
     def handle_message(self, message):
         if message == "Connect":
@@ -509,6 +522,7 @@ class FileElispServer(RemoteFileServer):
             self.send_message(message)
         except Exception as e:
             logger.exception(e)
+            del self.rpcs[ts]
             return None
         else:
             cpl.wait()
@@ -530,10 +544,6 @@ class FileCommandServer(RemoteFileServer):
         self.lsp_bridge.init_search_backends_complete_event.wait()
 
         super().handle_client()
-
-        # close all files when client disconnects
-        self.lsp_bridge.file_server.close_all_files()
-        self.lsp_bridge.close_all_files()
 
     def handle_message(self, message):
         if message["command"] == "lsp_request":
