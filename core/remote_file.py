@@ -40,6 +40,9 @@ class ContainerConnectionException(Exception):
 
 class RemoteFileClient(threading.Thread):
     remote_password_dict = {}
+    # Anchor on the interpreter so pgrep does not match the wrapper shell,
+    # whose command line also contains "lsp_bridge.py remote".
+    PGREP_REMOTE = "pgrep -f '\\''^[^ ]*(uv|python[0-9.]*) .*lsp_bridge[.]py remote'\\''"
 
     def __init__(self, ssh_conf, server_port, callback, remote_server_name = None):
         threading.Thread.__init__(self)
@@ -194,11 +197,10 @@ class RemoteFileClient(threading.Thread):
 
         # use -l option to bash as a login shell, ensuring that login scripts (like ~/.bash_profile) are read and executed.
         # This is useful for lsp-bridge to use environment settings to correctly find out language server command
-        # Brackets keep pgrep from matching its own command line.
         _, stdout, stderr = self.ssh.exec_command(
             f"""
             nohup /bin/bash -l -c '
-            pid=$(pgrep -f '\\''[l]sp_bridge.py remote'\\'')
+            pid=$({self.PGREP_REMOTE})
             if [ "$pid" == "" ]; then
                 echo -e "Start lsp-bridge process as user $(whoami)" | tee >{remote_log}
                 {remote_python_command} {remote_python_file} remote {remote_sever_name} >>{remote_log} 2>&1 &
@@ -221,7 +223,7 @@ class RemoteFileClient(threading.Thread):
             self.ssh.exec_command(
                 f"""
                 nohup /bin/bash -l -c '
-            pid=$(pgrep -f '\\''[l]sp_bridge.py remote'\\'')
+            pid=$({self.PGREP_REMOTE})
                 echo "try kill $pid" | tee >> {remote_log}
                 if ! [ "$pid" == "" ]; then
                     echo -e "kill lsp-bridge process as user $(whoami)" | tee >>{remote_log}
